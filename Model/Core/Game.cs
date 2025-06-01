@@ -174,7 +174,7 @@ namespace Model.Core
             return true;
         }
 
-        private List<(int, int)> GetValidMoves(Figure figure)
+        public List<(int, int)> GetValidMoves(Figure figure)
         {
             var moves = figure.GetAvailableMoves(Board);
             var validMoves = new List<(int, int)>();

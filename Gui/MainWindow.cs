@@ -17,12 +17,30 @@ namespace Gui
 {
     public partial class MainWindow : Form
     {
+        private static Color WHITE_CELL = Color.AntiqueWhite;
+        private static Color BLACK_CELL = Color.SandyBrown;
+        private static Color WHITE_CELL_SELECTED = Color.LawnGreen;
+        private static Color BLACK_CELL_SELECTED = Color.DarkGreen;
+        private static Color WHITE_CELL_HIGHLIGHTED = Color.DeepSkyBlue;
+        private static Color BLACK_CELL_HIGHLIGHTED = Color.MediumBlue;
+        private static Color WHITE_CELL_ATTACK = Color.DeepPink;
+        private static Color BLACK_CELL_ATTACK = Color.MediumVioletRed;
+
+        private struct Position
+        {
+            public int row { get; set; }
+            public int col { get; set; }
+        }
+
         private Model.Core.Game GameState { get; set; }
+        private Position? SelectedCell { get; set; }
 
         private Panel[][] BoardCells { get; set; }
         public MainWindow(Model.Core.Game game)
         {
             InitializeComponent();
+            
+
             GameState = game;
             BoardCells = new Panel[][]
             {
@@ -36,7 +54,14 @@ namespace Gui
                 new Panel[] { A1, B1, C1, D1, E1, F1, G1, H1 },
             };
 
+            for (int row = 0; row < 8; row++)
+            {
+                for (int col = 0; col < 8; col++) BoardCells[row][col].Click += Cell_Click;
+            }
+
             updateBoard();
+
+
         }
 
         private void updateBoard()
@@ -78,6 +103,55 @@ namespace Gui
         private void panel1_Paint(object sender, PaintEventArgs e)
         {
      
+        }
+
+        private void Cell_Click(object sender, EventArgs e)
+        {
+            Panel panel;
+            if (sender is Panel p)
+            {
+                panel = (Panel)sender;
+            }
+            else
+            {
+                return;
+            }
+
+            string cellName = panel.Name;
+            int row = 8 - int.Parse(cellName.Substring(1));
+            int col = (int)cellName[0] - 65;
+
+            Figure? figure = GameState.Board[row, col];
+            if (figure == null) return;
+
+            if (figure.Color == GameState.CurrentPlayer)
+            {
+                SelectCell(row, col);
+                //foreach (var pos in GameState.GetValidMoves(figure))
+                //{
+                //    HighlightCell(pos.Item1, pos.Item2);
+                //}
+            }
+        }
+
+        private void SelectCell(int row, int col)
+        {
+            DeselectCell();
+            SelectedCell = new Position { row=row, col=col };
+            BoardCells[row][col].BackColor = (row + col) % 2 == 0 ? WHITE_CELL_SELECTED : BLACK_CELL_SELECTED;
+        }
+
+        private void DeselectCell()
+        {
+            if (SelectedCell == null) return;
+            var cell = SelectedCell.Value;
+            BoardCells[cell.row][cell.col].BackColor = (cell.row + cell.col) % 2 == 0 ? WHITE_CELL : BLACK_CELL;
+            SelectedCell = null;
+        }
+
+        private void HighlightCell(int row, int col)
+        {
+            BoardCells[row][col].BackColor = (row + col) % 2 == 0 ? WHITE_CELL_HIGHLIGHTED : BLACK_CELL_HIGHLIGHTED;
         }
     }
 }
