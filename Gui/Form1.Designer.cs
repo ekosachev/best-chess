@@ -1,6 +1,6 @@
 ﻿namespace Gui;
 
-partial class Form1
+partial class MainMenu
 {
     /// <summary>
     ///  Required designer variable.
@@ -28,11 +28,63 @@ partial class Form1
     /// </summary>
     private void InitializeComponent()
     {
-        this.components = new System.ComponentModel.Container();
-        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-        this.ClientSize = new System.Drawing.Size(800, 450);
-        this.Text = "Form1";
+        NewGame = new Button();
+        ResumeGame = new Button();
+        SaveFormatSelector = new ComboBox();
+        SelectGameSaveFile = new OpenFileDialog();
+        SuspendLayout();
+        // 
+        // NewGame
+        // 
+        NewGame.Location = new Point(252, 176);
+        NewGame.Name = "NewGame";
+        NewGame.Size = new Size(131, 23);
+        NewGame.TabIndex = 0;
+        NewGame.Text = "Начать новую игру";
+        NewGame.UseVisualStyleBackColor = true;
+        NewGame.Click += button1_Click;
+        // 
+        // ResumeGame
+        // 
+        ResumeGame.Location = new Point(320, 205);
+        ResumeGame.Name = "ResumeGame";
+        ResumeGame.Size = new Size(131, 23);
+        ResumeGame.TabIndex = 1;
+        ResumeGame.Text = "Продолжить игру";
+        ResumeGame.UseVisualStyleBackColor = true;
+        ResumeGame.Click += button2_Click;
+        // 
+        // SaveFormatSelector
+        // 
+        SaveFormatSelector.FormattingEnabled = true;
+        SaveFormatSelector.Location = new Point(389, 176);
+        SaveFormatSelector.Name = "SaveFormatSelector";
+        SaveFormatSelector.Size = new Size(121, 23);
+        SaveFormatSelector.TabIndex = 2;
+        // 
+        // SelectGameSaveFile
+        // 
+        SelectGameSaveFile.FileName = "openFileDialog1";
+        SelectGameSaveFile.FileOk += openFileDialog1_FileOk;
+        // 
+        // MainMenu
+        // 
+        AutoScaleDimensions = new SizeF(7F, 15F);
+        AutoScaleMode = AutoScaleMode.Font;
+        ClientSize = new Size(800, 450);
+        Controls.Add(SaveFormatSelector);
+        Controls.Add(ResumeGame);
+        Controls.Add(NewGame);
+        Name = "MainMenu";
+        Text = "best-chess Main Menu";
+        Load += Form1_Load;
+        ResumeLayout(false);
     }
 
     #endregion
+
+    private Button NewGame;
+    private Button ResumeGame;
+    private ComboBox SaveFormatSelector;
+    private OpenFileDialog SelectGameSaveFile;
 }
