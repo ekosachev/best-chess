@@ -1,385 +1,395 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Model.Core
-{
-    public partial class Game
+{ 
+    public class Game
     {
-        public static Game Instance { get; private set; }
+        private static Game _instance;
+        private Stack<Figure[,]> _boardHistory = new Stack<Figure[,]>();
+        private Stack<string> _playerHistory = new Stack<string>();
+
+        public static Game Instance => _instance ??= new Game();
         public Figure[,] Board { get; private set; } = new Figure[8, 8];
         public string CurrentPlayer { get; private set; } = "White";
+        public Pawn LastPawn { get; private set; }
+        public bool LastMoveWasDoublePawnPush { get; private set; }
         public bool IsCheck { get; private set; }
         public bool IsCheckmate { get; private set; }
         public bool IsStalemate { get; private set; }
-        public Pawn LastPawn { get; private set; }
-        public bool LastMoveWasDoublePawnPush { get; private set; }
-        public int HalfMoveClock { get; private set; }
-        public int FullMoveNumber { get; private set; } = 1;
-
-        private readonly Stack<GameState> _history = new();
-        private readonly Dictionary<string, int> _positionCounts = new();
-
-        public event Action<string> OnCheck;
-        public event Action<string> OnCheckmate;
-        public event Action OnStalemate;
-        public event Action OnThreefoldRepetition;
-        public event Action OnFiftyMoveRuleDraw;
-        public event Action<(int, int)> OnPawnPromotion;
+        public (int row, int col)? EnPassantTarget { get; private set; }
 
         public Game()
         {
-            Instance = this;
             InitializeBoard();
-            SaveState();
+            SaveGameState();
         }
 
+        /// <summary>
+        /// Инициализация начальной расстановки фигур
+        /// </summary>
         private void InitializeBoard()
         {
-            // Пешки
+            // Расстановка пешек
             for (int col = 0; col < 8; col++)
             {
                 Board[1, col] = new Pawn("Black", (1, col));
                 Board[6, col] = new Pawn("White", (6, col));
             }
 
-            // Ладьи
-            PlacePiece(0, 0, new Rook("Black", (0, 0)));
-            PlacePiece(0, 7, new Rook("Black", (0, 7)));
-            PlacePiece(7, 0, new Rook("White", (7, 0)));
-            PlacePiece(7, 7, new Rook("White", (7, 7)));
+            // Расстановка остальных фигур
+            string[] backRowOrder = { "Rook", "Knight", "Bishop", "Queen", "King", "Bishop", "Knight", "Rook" };
 
-            // Кони
-            PlacePiece(0, 1, new Knight("Black", (0, 1)));
-            PlacePiece(0, 6, new Knight("Black", (0, 6)));
-            PlacePiece(7, 1, new Knight("White", (7, 1)));
-            PlacePiece(7, 6, new Knight("White", (7, 6)));
-
-            // Слоны
-            PlacePiece(0, 2, new Bishop("Black", (0, 2)));
-            PlacePiece(0, 5, new Bishop("Black", (0, 5)));
-            PlacePiece(7, 2, new Bishop("White", (7, 2)));
-            PlacePiece(7, 5, new Bishop("White", (7, 5)));
-
-            // Ферзи
-            PlacePiece(0, 3, new Queen("Black", (0, 3)));
-            PlacePiece(7, 3, new Queen("White", (7, 3)));
-
-            // Короли
-            PlacePiece(0, 4, new King("Black", (0, 4)));
-            PlacePiece(7, 4, new King("White", (7, 4)));
+            for (int col = 0; col < 8; col++)
+            {
+                Board[0, col] = CreateFigure(backRowOrder[col], "Black", (0, col));
+                Board[7, col] = CreateFigure(backRowOrder[col], "White", (7, col));
+            }
         }
 
-        private void PlacePiece(int row, int col, Figure piece)
+        private Figure CreateFigure(string type, string color, (int, int) position)
         {
-            Board[row, col] = piece;
-            piece.Position = (row, col);
+            return type switch
+            {
+                "Pawn" => new Pawn(color, position),
+                "Rook" => new Rook(color, position),
+                "Knight" => new Knight(color, position),
+                "Bishop" => new Bishop(color, position),
+                "Queen" => new Queen(color, position),
+                "King" => new King(color, position),
+                _ => throw new ArgumentException("Unknown figure type")
+            };
         }
 
-        public bool Move((int fromRow, int fromCol) from, (int toRow, int toCol) to)
+        /// <summary>
+        /// Сохраняет текущее состояние игры для возможного отката
+        /// </summary>
+        private void SaveGameState()
         {
-            if (!IsValidPosition(from) || !IsValidPosition(to))
-                return false;
+            var boardCopy = (Figure[,])Board.Clone();
+            _boardHistory.Push(boardCopy);
+            _playerHistory.Push(CurrentPlayer);
+        }
 
-            var figure = Board[from.fromRow, from.fromCol];
+        /// <summary>
+        /// Отменяет последний ход
+        /// </summary>
+        public void UndoLastMove()
+        {
+            if (_boardHistory.Count > 1)
+            {
+                _boardHistory.Pop(); // Удаляем текущее состояние
+                Board = _boardHistory.Peek();
+                CurrentPlayer = _playerHistory.Pop();
+                UpdateGameStatus();
+            }
+        }
+
+        /// <summary>
+        /// Выполняет ход фигурой
+        /// </summary>
+        public bool MakeMove((int row, int col) from, (int row, int col) to)
+        {
+            var figure = Board[from.row, from.col];
             if (figure == null || figure.Color != CurrentPlayer)
                 return false;
 
-            // Специальные ходы
-            if (figure is King && IsCastlingMove(from, to))
-                return PerformCastling(from, to);
-
-            if (!IsMoveAllowed(figure, from, to))
+            // Проверяем, что ход допустим
+            if (!GetValidMoves(figure).Contains(to))
                 return false;
 
-            SaveState();
-            ExecuteMove(figure, from, to);
-            HandlePostMoveActions(figure, to);
-            SwitchPlayer();
-            UpdateGameState();
+            // Сохраняем состояние до хода
+            SaveGameState();
+
+            // Обработка специальных ходов
+            HandleSpecialMoves(figure, from, to);
+
+            // Выполняем перемещение
+            Board[to.row, to.col] = figure;
+            Board[from.row, from.col] = null;
+            figure.Position = to;
+            figure.HasMoved = true;
+
+            // Обработка превращения пешки
+            HandlePawnPromotion(figure, to);
+
+            // Смена игрока и обновление статуса
+            CurrentPlayer = CurrentPlayer == "White" ? "Black" : "White";
+            UpdateGameStatus();
 
             return true;
         }
 
-        private bool IsValidPosition((int row, int col) position)
-            => position.row >= 0 && position.row < 8 && position.col >= 0 && position.col < 8;
-
-        private bool IsCastlingMove((int, int) from, (int, int) to)
-            => Math.Abs(from.Item2 - to.Item2) == 2;
-
-        private bool IsMoveAllowed(Figure figure, (int, int) from, (int, int) to)
-        {
-            var availableMoves = figure.GetAvailableMoves(Board);
-            return availableMoves.Contains((to.Item1, to.Item2)) &&
-                   !WouldKingBeInCheck(figure, (to.Item1, to.Item2));
-        }
-
-        private bool WouldKingBeInCheck(Figure figure, (int, int) targetPos)
-        {
-            var tempBoard = CloneBoard();
-            tempBoard[targetPos.Item1, targetPos.Item2] = figure;
-            tempBoard[figure.Position.row, figure.Position.col] = null;
-            return IsKingInCheck(figure.Color, tempBoard);
-        }
-
-        private Figure[,] CloneBoard()
-        {
-            var clone = new Figure[8, 8];
-            Array.Copy(Board, clone, Board.Length);
-            return clone;
-        }
-
-        private void ExecuteMove(Figure figure, (int fromRow, int fromCol) from, (int toRow, int toCol) to)
+        private void HandleSpecialMoves(Figure figure, (int row, int col) from, (int row, int col) to)
         {
             // Взятие на проходе
-            if (figure is Pawn && to.toCol != from.fromCol && Board[to.toRow, to.toCol] == null)
+            if (figure is Pawn && from.col != to.col && Board[to.row, to.col] == null)
             {
-                Board[from.fromRow, to.toCol] = null;
-                HalfMoveClock = 0;
+                Board[from.row, to.col] = null; // Удаляем взятую пешку
             }
 
-            // Обычное перемещение
-            Board[to.toRow, to.toCol] = figure;
-            Board[from.fromRow, from.fromCol] = null;
-            figure.Position = (to.toRow, to.toCol);
-            figure.HasMoved = true;
-
-            // Обновление счетчиков
-            UpdateMoveCounters(figure, Board[to.toRow, to.toCol] != null);
-        }
-
-        private void UpdateMoveCounters(Figure figure, bool captureOccurred)
-        {
-            if (captureOccurred || figure is Pawn)
-                HalfMoveClock = 0;
-            else
-                HalfMoveClock++;
-        }
-
-        private void HandlePostMoveActions(Figure figure, (int toRow, int toCol) to)
-        {
-            if (figure is Pawn pawn)
+            // Рокировка
+            if (figure is King && Math.Abs(from.col - to.col) == 2)
             {
-                HandlePawnSpecialCases(pawn, to);
-                CheckPawnPromotion(pawn, to.toRow);
+                HandleCastling(from, to);
             }
-        }
 
-        private void HandlePawnSpecialCases(Pawn pawn, (int, int) to)
-        {
-            if (Math.Abs(pawn.Position.row - to.Item1) == 2)
+            // Обновление состояния для взятия на проходе
+            if (figure is Pawn pawn && Math.Abs(from.row - to.row) == 2)
             {
                 LastPawn = pawn;
                 LastMoveWasDoublePawnPush = true;
+                EnPassantTarget = ((from.row + to.row) / 2, from.col);
             }
             else
             {
                 LastMoveWasDoublePawnPush = false;
+                EnPassantTarget = null;
             }
         }
 
-        private void CheckPawnPromotion(Pawn pawn, int toRow)
+        private void HandleCastling((int row, int col) from, (int row, int col) to)
         {
-            if (toRow == 0 || toRow == 7)
-                OnPawnPromotion?.Invoke((toRow, pawn.Position.col));
-        }
+            int rookCol = to.col > from.col ? 7 : 0;
+            int newRookCol = to.col > from.col ? 5 : 3;
 
-        private bool PerformCastling((int, int) from, (int, int) to)
-        {
-            var king = Board[from.Item1, from.Item2] as King;
-            int rookCol = to.Item2 > from.Item2 ? 7 : 0;
-            var rook = Board[from.Item1, rookCol] as Rook;
-
-            if (king == null || rook == null || king.HasMoved || rook.HasMoved)
-                return false;
-
-            if (!IsCastlingPathClear(from.Item1, from.Item2, rookCol))
-                return false;
-
-            SaveState();
-            ExecuteCastling(king, rook, from, to, rookCol);
-            return true;
-        }
-
-        private bool IsCastlingPathClear(int row, int kingCol, int rookCol)
-        {
-            int start = Math.Min(kingCol, rookCol) + 1;
-            int end = Math.Max(kingCol, rookCol);
-
-            for (int col = start; col < end; col++)
-            {
-                if (Board[row, col] != null || IsSquareUnderAttack(row, col, CurrentPlayer))
-                    return false;
-            }
-            return true;
-        }
-
-        private void ExecuteCastling(King king, Rook rook, (int, int) from, (int, int) to, int rookCol)
-        {
-            // Перемещаем короля
-            Board[to.Item1, to.Item2] = king;
-            Board[from.Item1, from.Item2] = null;
-            king.Position = (to.Item1, to.Item2);
-            king.HasMoved = true;
-
-            // Перемещаем ладью
-            int newRookCol = to.Item2 > from.Item2 ? 5 : 3;
-            Board[from.Item1, newRookCol] = rook;
-            Board[from.Item1, rookCol] = null;
-            rook.Position = (from.Item1, newRookCol);
+            var rook = Board[from.row, rookCol];
+            Board[from.row, newRookCol] = rook;
+            Board[from.row, rookCol] = null;
+            rook.Position = (from.row, newRookCol);
             rook.HasMoved = true;
-
-            UpdateMoveCounters(king, false);
         }
 
-        private void SwitchPlayer()
+        private void HandlePawnPromotion(Figure figure, (int row, int col) to)
         {
-            CurrentPlayer = CurrentPlayer == "White" ? "Black" : "White";
-            if (CurrentPlayer == "Black") FullMoveNumber++;
-        }
-
-        public bool IsKingInCheck(string color, Figure[,] board)
-        {
-            var kingPos = FindKing(color, board);
-            return board.Cast<Figure>()
-                .Where(f => f != null && f.Color != color)
-                .Any(f => f.GetAvailableMoves(board).Contains(kingPos));
-        }
-
-        public bool IsSquareUnderAttack(int row, int col, string defenderColor)
-        {
-            return Board.Cast<Figure>()
-                .Where(f => f != null && f.Color != defenderColor)
-                .Any(f => f.GetAvailableMoves(Board).Contains((row, col)));
-        }
-
-        private (int, int) FindKing(string color, Figure[,] board)
-        {
-            for (int row = 0; row < 8; row++)
-                for (int col = 0; col < 8; col++)
-                    if (board[row, col] is King && board[row, col].Color == color)
-                        return (row, col);
-            throw new Exception("Король не найден!");
-        }
-
-        private void UpdateGameState()
-        {
-            IsCheck = IsKingInCheck(CurrentPlayer, Board);
-            IsCheckmate = IsCheck && !HasAnyValidMove(CurrentPlayer);
-            IsStalemate = !IsCheck && !HasAnyValidMove(CurrentPlayer);
-
-            if (IsCheckmate) OnCheckmate?.Invoke(CurrentPlayer == "White" ? "Black" : "White");
-            else if (IsCheck) OnCheck?.Invoke(CurrentPlayer);
-            else if (IsStalemate) OnStalemate?.Invoke();
-        }
-
-        private bool HasAnyValidMove(string player)
-        {
-            for (int row = 0; row < 8; row++)
+            if (figure is Pawn && (to.row == 0 || to.row == 7))
             {
-                for (int col = 0; col < 8; col++)
+                // Здесь можно добавить логику выбора фигуры для превращения
+                Board[to.row, to.col] = new Queen(figure.Color, to);
+            }
+        }
+
+        /// <summary>
+        /// Обновляет статус игры (шах, мат, пат)
+        /// </summary>
+        public void UpdateGameStatus()
+        {
+            IsCheck = IsKingInCheck(CurrentPlayer);
+            IsCheckmate = IsCheck && !HasAnyValidMoves();
+            IsStalemate = !IsCheck && !HasAnyValidMoves();
+        }
+
+        private bool IsKingInCheck(string playerColor)
+        {
+            var kingPos = FindKing(playerColor);
+            return IsSquareUnderAttack(kingPos, playerColor == "White" ? "Black" : "White");
+        }
+        private bool HasAnyValidMoves()
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                for (int j = 0; j < 8; j++)
                 {
-                    var figure = Board[row, col];
-                    if (figure != null && figure.Color == player &&
-                        GetValidMoves(figure).Count > 0)
-                        return true;
+                    var figure = Board[i, j];
+                    if (figure != null && figure.Color == CurrentPlayer)
+                    {
+                        if (GetValidMoves(figure).Count > 0)
+                            return true;
+                    }
                 }
             }
             return false;
         }
 
-        private List<(int, int)> GetValidMoves(Figure figure)
+        /// <summary>
+        /// Возвращает все допустимые ходы для фигуры
+        /// </summary>
+        public List<(int row, int col)> GetValidMoves(Figure figure)
         {
-            return figure.GetAvailableMoves(Board)
-                .Where(move => !WouldKingBeInCheck(figure, move))
-                .ToList();
-        }
+            var rawMoves = figure.GetRawMoves(Board);
+            var validMoves = new List<(int, int)>();
 
-        private void CheckSpecialRules()
-        {
-            string positionKey = GetBoardHash();
-            _positionCounts[positionKey] = _positionCounts.GetValueOrDefault(positionKey) + 1;
-
-            if (_positionCounts[positionKey] >= 3)
-                OnThreefoldRepetition?.Invoke();
-            if (HalfMoveClock >= 50)
-                OnFiftyMoveRuleDraw?.Invoke();
-        }
-
-        private string GetBoardHash()
-        {
-            var hash = new System.Text.StringBuilder();
-            for (int row = 0; row < 8; row++)
+            foreach (var move in rawMoves)
             {
-                for (int col = 0; col < 8; col++)
-                {
-                    var figure = Board[row, col];
-                    hash.Append(figure?.Name[0] ?? '-');
-                    hash.Append(figure?.Color[0] ?? '-');
-                    hash.Append(figure?.HasMoved ?? false ? '1' : '0');
-                }
+                if (IsMoveValid(figure, move))
+                    validMoves.Add(move);
             }
-            hash.Append(CurrentPlayer);
-            return hash.ToString();
+
+            return validMoves;
         }
 
-        public void PromotePawn((int, int) position, string newFigureType)
+        private bool IsMoveValid(Figure figure, (int row, int col) move)
         {
-            if (!(Board[position.Item1, position.Item2] is Pawn pawn))
-                return;
+            // Базовые проверки
+            if (!IsInsideBoard(move.row, move.col)) return false;
+            if (Board[move.row, move.col]?.Color == figure.Color) return false;
 
-            Figure newFigure = newFigureType switch
+            // Специальные проверки для каждого типа фигур
+            if (figure is Pawn)
+                return IsPawnMoveValid((Pawn)figure, move);
+
+            if (figure is King)
+                return IsKingMoveValid((King)figure, move);
+
+            // Для остальных фигур - проверка, не откроют ли короля
+            return !WouldMoveExposeKing(figure, move);
+        }
+
+        private bool IsPawnMoveValid(Pawn pawn, (int row, int col) move)
+        {
+            int direction = pawn.Color == "White" ? -1 : 1;
+            int colDiff = Math.Abs(move.col - pawn.Position.col);
+
+            // Обычный ход вперед
+            if (colDiff == 0)
             {
-                "Queen" => new Queen(pawn.Color, position),
-                "Rook" => new Rook(pawn.Color, position),
-                "Bishop" => new Bishop(pawn.Color, position),
-                "Knight" => new Knight(pawn.Color, position),
-                _ => throw new ArgumentException("Неизвестный тип фигуры")
-            };
+                if (Board[move.row, move.col] != null) return false;
 
-            Board[position.Item1, position.Item2] = newFigure;
-            UpdateGameState();
-        }
-
-        private void SaveState()
-        {
-            _history.Push(new GameState
+                // Двойной ход
+                if (Math.Abs(move.row - pawn.Position.row) == 2)
+                {
+                    int middleRow = (move.row + pawn.Position.row) / 2;
+                    return !pawn.HasMoved && Board[middleRow, move.col] == null;
+                }
+                return true;
+            }
+            // Взятие
+            else if (colDiff == 1)
             {
-                Board = CloneBoard(),
-                CurrentPlayer = CurrentPlayer,
-                HalfMoveClock = HalfMoveClock,
-                FullMoveNumber = FullMoveNumber,
-                LastPawn = LastPawn,
-                LastMoveWasDoublePawnPush = LastMoveWasDoublePawnPush
-            });
+                // Обычное взятие
+                if (Board[move.row, move.col] != null)
+                    return true;
+
+                // Взятие на проходе
+                return move == EnPassantTarget;
+            }
+
+            return false;
         }
 
-        public bool UndoMove()
+        private bool IsKingMoveValid(King king, (int row, int col) move)
         {
-            if (_history.Count <= 1) return false;
+            // Рокировка
+            if (Math.Abs(move.col - king.Position.col) == 2)
+                return IsCastlingValid(king, move);
 
-            var state = _history.Pop();
-            Board = state.Board;
-            CurrentPlayer = state.CurrentPlayer;
-            HalfMoveClock = state.HalfMoveClock;
-            FullMoveNumber = state.FullMoveNumber;
-            LastPawn = state.LastPawn;
-            LastMoveWasDoublePawnPush = state.LastMoveWasDoublePawnPush;
+            // Обычный ход короля
+            return !WouldPositionBeUnderAttack(move, king.Color);
+        }
 
-            UpdateGameState();
+        private bool IsCastlingValid(King king, (int row, int col) move)
+        {
+            if (king.HasMoved || IsKingInCheck(king.Color))
+                return false;
+
+            int rookCol = move.col > king.Position.col ? 7 : 0;
+            var rook = Board[king.Position.row, rookCol] as Rook;
+
+            if (rook == null || rook.HasMoved)
+                return false;
+
+            // Проверка, что путь свободен
+            int start = Math.Min(king.Position.col, rookCol) + 1;
+            int end = Math.Max(king.Position.col, rookCol);
+
+            for (int col = start; col < end; col++)
+            {
+                if (Board[king.Position.row, col] != null)
+                    return false;
+
+                if (col != king.Position.col && col != rookCol &&
+                    WouldPositionBeUnderAttack((king.Position.row, col), king.Color))
+                    return false;
+            }
+
             return true;
         }
 
-        private class GameState
+        public bool WouldPositionBeUnderAttack((int row, int col) position, string playerColor)
         {
-            public Figure[,] Board { get; set; }
-            public string CurrentPlayer { get; set; }
-            public int HalfMoveClock { get; set; }
-            public int FullMoveNumber { get; set; }
-            public Pawn LastPawn { get; set; }
-            public bool LastMoveWasDoublePawnPush { get; set; }
+            return IsSquareUnderAttack(position, playerColor == "White" ? "Black" : "White");
+        }
+
+        private bool IsSquareUnderAttack((int row, int col) position, string byColor)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                for (int j = 0; j < 8; j++)
+                {
+                    var figure = Board[i, j];
+                    if (figure != null && figure.Color == byColor)
+                    {
+                        // Для пешек особый случай - они бьют не так, как ходят
+                        if (figure is Pawn pawn)
+                        {
+                            int direction = pawn.Color == "White" ? -1 : 1;
+                            if ((position.col == j - 1 || position.col == j + 1) &&
+                                position.row == i + direction)
+                                return true;
+                        }
+                        else if (figure.GetRawMoves(Board).Contains(position))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        private bool WouldMoveExposeKing(Figure figure, (int row, int col) move)
+        {
+            // Сохраняем текущее состояние
+            var originalPosition = figure.Position;
+            var originalFigure = Board[move.row, move.col];
+
+            // Делаем временный ход
+            Board[move.row, move.col] = figure;
+            Board[originalPosition.row, originalPosition.col] = null;
+            figure.Position = move;
+
+            // Проверяем шах
+            var kingPos = FindKing(figure.Color);
+            var isCheck = IsSquareUnderAttack(kingPos, figure.Color == "White" ? "Black" : "White");
+
+            // Возвращаем всё как было
+            Board[originalPosition.row, originalPosition.col] = figure;
+            Board[move.row, move.col] = originalFigure;
+            figure.Position = originalPosition;
+
+            return isCheck;
+        }
+
+        private (int row, int col) FindKing(string color)
+        {
+            for (int i = 0; i < 8; i++)
+                for (int j = 0; j < 8; j++)
+                    if (Board[i, j] is King king && king.Color == color)
+                        return (i, j);
+            return (-1, -1);
+        }
+
+        private bool IsInsideBoard(int row, int col)
+        {
+            return row >= 0 && row < 8 && col >= 0 && col < 8;
+        }
+
+        /// <summary>
+        /// Сбрасывает игру в начальное состояние
+        /// </summary>
+        public void ResetGame()
+        {
+            Board = new Figure[8, 8];
+            CurrentPlayer = "White";
+            InitializeBoard();
+            _boardHistory.Clear();
+            _playerHistory.Clear();
+            SaveGameState();
+            UpdateGameStatus();
         }
     }
 }

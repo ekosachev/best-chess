@@ -150,7 +150,7 @@ namespace Gui
                 Console.WriteLine("Making a move");
                 (int, int) from = (SelectedCell.Value.row, SelectedCell.Value.col);
                 (int, int) to = (row, col);
-                GameState.Move(from, to);
+                GameState.MakeMove(from, to);
             }
 
             Figure? figure = GameState.Board[row, col];

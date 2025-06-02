@@ -6,42 +6,46 @@ using System.Threading.Tasks;
 
 namespace Model.Core
 {
-        public class Bishop : Figure
+    public class Bishop : Figure
+    {
+        public Bishop(string color, (int row, int col) position) : base(color, position)
         {
-            public Bishop(string color, (int, int) position) : base(color, position)
-            {
-                Name = "Bishop";
-            }
-
-            public override List<(int, int)> GetRawMoves(Figure[,] board)
-            {
-                var moves = new List<(int, int)>();
-
-                int[] directions = { -1, 1 };
-                foreach (int rowDir in directions)
-                {
-                    foreach (int colDir in directions)
-                    {
-                        for (int i = 1; i < 8; i++)
-                        {
-                            int newRow = Position.row + i * rowDir;
-                            int newCol = Position.col + i * colDir;
-
-                            if (!IsInsideBoard(newRow, newCol)) break;
-
-                            if (board[newRow, newCol] == null)
-                                moves.Add((newRow, newCol));
-                            else
-                            {
-                                if (IsEnemy(board, newRow, newCol))
-                                    moves.Add((newRow, newCol));
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                return moves;
-            }
+            Name = "Bishop";
         }
+
+        public override List<(int row, int col)> GetRawMoves(Figure[,] board)
+        {
+            var moves = new List<(int, int)>();
+            var (row, col) = Position;
+
+            // По диагоналям
+            int[][] directions = { new[] { 1, 1 }, new[] { 1, -1 }, new[] { -1, 1 }, new[] { -1, -1 } };
+
+            foreach (var dir in directions)
+            {
+                int steps = 1;
+                while (true)
+                {
+                    int newRow = row + dir[0] * steps;
+                    int newCol = col + dir[1] * steps;
+
+                    if (!IsInsideBoard(newRow, newCol)) break;
+
+                    if (board[newRow, newCol] == null)
+                    {
+                        moves.Add((newRow, newCol));
+                    }
+                    else
+                    {
+                        if (board[newRow, newCol].Color != Color)
+                            moves.Add((newRow, newCol));
+                        break;
+                    }
+                    steps++;
+                }
+            }
+
+            return moves;
+        }
+    }
 }

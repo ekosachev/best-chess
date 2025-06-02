@@ -5,49 +5,47 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Model.Core
-{ 
-            public class Rook : Figure
+{
+    public class Rook : Figure
+    {
+        public Rook(string color, (int row, int col) position) : base(color, position)
+        {
+            Name = "Rook";
+        }
+
+        public override List<(int row, int col)> GetRawMoves(Figure[,] board)
+        {
+            var moves = new List<(int, int)>();
+            var (row, col) = Position;
+
+            // По вертикали и горизонтали
+            int[][] directions = { new[] { 1, 0 }, new[] { -1, 0 }, new[] { 0, 1 }, new[] { 0, -1 } };
+
+            foreach (var dir in directions)
             {
-                public Rook(string color, (int, int) position) : base(color, position)
+                int steps = 1;
+                while (true)
                 {
-                    Name = "Rook";
-                }
+                    int newRow = row + dir[0] * steps;
+                    int newCol = col + dir[1] * steps;
 
-                public override List<(int, int)> GetRawMoves(Figure[,] board)
-                {
-                    var moves = new List<(int, int)>();
+                    if (!IsInsideBoard(newRow, newCol)) break;
 
-                    int[] directions = { -1, 1 };
-                    foreach (int dir in directions)
+                    if (board[newRow, newCol] == null)
                     {
-                        // По горизонтали
-                        for (int col = Position.col + dir; IsInsideBoard(Position.row, col); col += dir)
-                        {
-                            if (board[Position.row, col] == null)
-                                moves.Add((Position.row, col));
-                            else
-                            {
-                                if (IsEnemy(board, Position.row, col))
-                                    moves.Add((Position.row, col));
-                                break;
-                            }
-                        }
-
-                        // По вертикали
-                        for (int row = Position.row + dir; IsInsideBoard(row, Position.col); row += dir)
-                        {
-                            if (board[row, Position.col] == null)
-                                moves.Add((row, Position.col));
-                            else
-                            {
-                                if (IsEnemy(board, row, Position.col))
-                                    moves.Add((row, Position.col));
-                                break;
-                            }
-                        }
+                        moves.Add((newRow, newCol));
                     }
-
-                    return moves;
+                    else
+                    {
+                        if (board[newRow, newCol].Color != Color)
+                            moves.Add((newRow, newCol));
+                        break;
+                    }
+                    steps++;
                 }
             }
+
+            return moves;
+        }
+    }
 }

@@ -8,68 +8,48 @@ namespace Model.Core
 {
     public class Queen : Figure
     {
-        public Queen(string color, (int, int) position) : base(color, position)
+        public Queen(string color, (int row, int col) position) : base(color, position)
         {
             Name = "Queen";
         }
-        public override List<(int, int)> GetRawMoves(Figure[,] board)
+
+        public override List<(int row, int col)> GetRawMoves(Figure[,] board)
         {
             var moves = new List<(int, int)>();
+            var (row, col) = Position;
 
-            // Горизонтальные и вертикальные ходы (как ладья)
-            int[] directions = { -1, 1 };
-            foreach (int dir in directions)
+            // Комбинация ладьи и слона
+            int[] directions = { -1, 0, 1 };
+
+            foreach (int i in directions)
             {
-                // По горизонтали
-                for (int col = Position.col + dir; IsInsideBoard(Position.row, col); col += dir)
+                foreach (int j in directions)
                 {
-                    if (board[Position.row, col] == null)
-                        moves.Add((Position.row, col));
-                    else
-                    {
-                        if (IsEnemy(board, Position.row, col))
-                            moves.Add((Position.row, col));
-                        break;
-                    }
-                }
+                    if (i == 0 && j == 0) continue;
 
-                // По вертикали
-                for (int row = Position.row + dir; IsInsideBoard(row, Position.col); row += dir)
-                {
-                    if (board[row, Position.col] == null)
-                        moves.Add((row, Position.col));
-                    else
+                    int steps = 1;
+                    while (true)
                     {
-                        if (IsEnemy(board, row, Position.col))
-                            moves.Add((row, Position.col));
-                        break;
-                    }
-                }
-            }
-
-            // Диагональные ходы (как слон)
-            foreach (int rowDir in new[] { -1, 1 })
-            {
-                foreach (int colDir in new[] { -1, 1 })
-                {
-                    for (int i = 1; i < 8; i++)
-                    {
-                        int newRow = Position.row + i * rowDir;
-                        int newCol = Position.col + i * colDir;
+                        int newRow = row + i * steps;
+                        int newCol = col + j * steps;
 
                         if (!IsInsideBoard(newRow, newCol)) break;
 
                         if (board[newRow, newCol] == null)
+                        {
                             moves.Add((newRow, newCol));
+                        }
                         else
                         {
-                            if (IsEnemy(board, newRow, newCol))
+                            if (board[newRow, newCol].Color != Color)
                                 moves.Add((newRow, newCol));
                             break;
                         }
+                        steps++;
                     }
                 }
             }
+
             return moves;
         }
     }

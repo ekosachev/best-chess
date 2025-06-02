@@ -11,65 +11,58 @@ namespace Model.Core
 {
     public class King : Figure
     {
-        public King(string color, (int, int) position) : base(color, position)
+        public King(string color, (int row, int col) position) : base(color, position)
         {
             Name = "King";
         }
 
-        public override List<(int, int)> GetRawMoves(Figure[,] board)
+        public override List<(int row, int col)> GetRawMoves(Figure[,] board)
         {
             var moves = new List<(int, int)>();
-            int[] rowOffsets = { -1, -1, -1, 0, 0, 1, 1, 1 };
-            int[] colOffsets = { -1, 0, 1, -1, 1, -1, 0, 1 };
+            var (row, col) = Position;
 
-            for (int i = 0; i < 8; i++)
+            // Все 8 возможных направлений
+            for (int i = -1; i <= 1; i++)
             {
-                int newRow = Position.row + rowOffsets[i];
-                int newCol = Position.col + colOffsets[i];
+                for (int j = -1; j <= 1; j++)
+                {
+                    if (i == 0 && j == 0) continue;
 
-                if (IsInsideBoard(newRow, newCol) && !IsAlly(board, newRow, newCol))
-                    moves.Add((newRow, newCol));
+                    int newRow = row + i;
+                    int newCol = col + j;
+
+                    if (IsInsideBoard(newRow, newCol) &&
+                        (board[newRow, newCol] == null || board[newRow, newCol].Color != Color))
+                    {
+                        moves.Add((newRow, newCol));
+                    }
+                }
+            }
+
+            // Рокировка (нужно добавить проверки)
+            if (!HasMoved)
+            {
+                // Короткая рокировка
+                if (board[row, 7] is Rook rook1 && !rook1.HasMoved)
+                {
+                    if (board[row, 5] == null && board[row, 6] == null)
+                        moves.Add((row, 6));
+                }
+                // Длинная рокировка
+                if (board[row, 0] is Rook rook2 && !rook2.HasMoved)
+                {
+                    if (board[row, 1] == null && board[row, 2] == null && board[row, 3] == null)
+                        moves.Add((row, 2));
+                }
             }
 
             return moves;
         }
 
-        public override List<(int, int)> GetAvailableMoves(Figure[,] board)
+        public override List<(int row, int col)> GetValidMoves(Figure[,] board)
         {
-            var moves = GetRawMoves(board)
-                .Where(move => IsMoveSafe(board, move))
-                .ToList();
-
-            // Рокировка
-            if (!HasMoved && !Game.Instance.IsKingInCheck(Color, board))
-            {
-                // Короткая (вправо)
-                if (CanCastle(board, 7))
-                    moves.Add((Position.row, 6));
-
-                // Длинная (влево)
-                if (CanCastle(board, 0))
-                    moves.Add((Position.row, 2));
-            }
-
-            return moves;
-        }
-
-        private bool CanCastle(Figure[,] board, int rookCol)
-        {
-            var rook = board[Position.row, rookCol] as Rook;
-            if (rook == null || rook.HasMoved) return false;
-
-            int start = Math.Min(Position.col, rookCol) + 1;
-            int end = Math.Max(Position.col, rookCol);
-            for (int col = start; col < end; col++)
-                if (board[Position.row, col] != null) return false;
-
-            for (int col = Position.col; col != rookCol; col += Math.Sign(rookCol - Position.col))
-                if (Game.Instance.IsSquareUnderAttack(Position.row, col, Color))
-                    return false;
-
-            return true;
+            var rawMoves = GetRawMoves(board);
+            return rawMoves.Where(move => !Game.Instance.WouldPositionBeUnderAttack(move, Color)).ToList();
         }
     }
 }
