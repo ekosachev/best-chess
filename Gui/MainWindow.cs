@@ -13,10 +13,17 @@ using Model;
 using Model.Core;
 using Newtonsoft.Json.Bson;
 
+
 namespace Gui
 {
     public partial class MainWindow : Form
     {
+        struct Format
+        {
+            public string Name { get; set; }
+            public string Value { get; set; }
+        }
+
         private static Color WHITE_CELL = Color.AntiqueWhite;
         private static Color BLACK_CELL = Color.SandyBrown;
         private static Color WHITE_CELL_SELECTED = Color.LawnGreen;
@@ -39,7 +46,21 @@ namespace Gui
         public MainWindow(Model.Core.Game game)
         {
             InitializeComponent();
-            
+
+            saveFileSelector.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+
+            List<Format> formats = new List<Format>
+            {
+                new Format { Name = "JSON", Value = "json" },
+                new Format { Name = "XML", Value = "xml" },
+            };
+
+            saveFormatSelector.DataSource = formats;
+            saveFormatSelector.DisplayMember = "Name";
+            saveFormatSelector.ValueMember = "Value";
+            saveFormatSelector.SelectedIndex = 0;
+
 
             GameState = game;
             BoardCells = new Panel[][]
@@ -59,9 +80,16 @@ namespace Gui
                 for (int col = 0; col < 8; col++) BoardCells[row][col].Click += Cell_Click;
             }
 
+            currentTurnLabel.Paint += CurrentTurnLabel_Paint;
+
             updateBoard();
 
 
+        }
+
+        private void CurrentTurnLabel_Paint(object? sender, PaintEventArgs e)
+        {
+            currentTurnLabel.Text = GameState.CurrentPlayer == "White" ? "Белые" : "Черные";
         }
 
         private void updateBoard()
@@ -85,24 +113,14 @@ namespace Gui
         private Bitmap getPieceImage(IFigure figure)
         {
             Bitmap image = null;
-            if (figure is Pawn _ ) _ = (figure.Color == "White") ? image = Properties.Resources.wp : image = Properties.Resources.bp;
-            if (figure is Rook _ ) _ = (figure.Color == "White") ? image = Properties.Resources.wr : image = Properties.Resources.br;
-            if (figure is Knight _ ) _ = (figure.Color == "White") ? image = Properties.Resources.wn : image = Properties.Resources.bn;
+            if (figure is Pawn _) _ = (figure.Color == "White") ? image = Properties.Resources.wp : image = Properties.Resources.bp;
+            if (figure is Rook _) _ = (figure.Color == "White") ? image = Properties.Resources.wr : image = Properties.Resources.br;
+            if (figure is Knight _) _ = (figure.Color == "White") ? image = Properties.Resources.wn : image = Properties.Resources.bn;
             if (figure is Bishop _) _ = (figure.Color == "White") ? image = Properties.Resources.wb : image = Properties.Resources.bb;
             if (figure is Queen _) _ = (figure.Color == "White") ? image = Properties.Resources.wq : image = Properties.Resources.bq;
-            if (figure is King _ ) _ = (figure.Color == "White") ? image = Properties.Resources.wk : image = Properties.Resources.bk;
-     
+            if (figure is King _) _ = (figure.Color == "White") ? image = Properties.Resources.wk : image = Properties.Resources.bk;
+
             return image;
-        }
-
-        private void tableLayoutPanel1_Paint(object sender, PaintEventArgs e)
-        {
-
-        }
-
-        private void panel1_Paint(object sender, PaintEventArgs e)
-        {
-     
         }
 
         private void Cell_Click(object sender, EventArgs e)
@@ -116,16 +134,31 @@ namespace Gui
             {
                 return;
             }
+            Console.WriteLine("Clicked a panel");
 
             string cellName = panel.Name;
             int row = 8 - int.Parse(cellName.Substring(1));
             int col = (int)cellName[0] - 65;
+
+            if (SelectedCell != null)
+            {
+                if (SelectedCell.Value.row == row && SelectedCell.Value.col == col)
+                {
+                    DeselectCell();
+                    return;
+                }
+                Console.WriteLine("Making a move");
+                (int, int) from = (SelectedCell.Value.row, SelectedCell.Value.col);
+                (int, int) to = (row, col);
+                GameState.Move(from, to);
+            }
 
             Figure? figure = GameState.Board[row, col];
             if (figure == null) return;
 
             if (figure.Color == GameState.CurrentPlayer)
             {
+
                 SelectCell(row, col);
                 //foreach (var pos in GameState.GetValidMoves(figure))
                 //{
@@ -137,7 +170,7 @@ namespace Gui
         private void SelectCell(int row, int col)
         {
             DeselectCell();
-            SelectedCell = new Position { row=row, col=col };
+            SelectedCell = new Position { row = row, col = col };
             BoardCells[row][col].BackColor = (row + col) % 2 == 0 ? WHITE_CELL_SELECTED : BLACK_CELL_SELECTED;
         }
 
@@ -153,5 +186,15 @@ namespace Gui
         {
             BoardCells[row][col].BackColor = (row + col) % 2 == 0 ? WHITE_CELL_HIGHLIGHTED : BLACK_CELL_HIGHLIGHTED;
         }
+
+        private void ChooseSaveFile(object sender, EventArgs e)
+        {
+            saveFileSelector.DefaultExt = $".{saveFormatSelector.SelectedValue}";
+            var dt = DateTime.Now;
+            saveFileSelector.FileName = $"game-{dt.Year}-{dt.Month}-{dt.Day}T{dt.Hour}:{dt.Minute}:{dt.Second}";
+            var result = saveFileSelector.ShowDialog();
+        }
+
+
     }
 }
