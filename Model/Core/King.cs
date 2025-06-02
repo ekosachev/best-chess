@@ -1,25 +1,27 @@
-﻿using System;
+﻿
+using Model.Core;
+using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Model.Core
 {
-    public class King : Figure //король
+    public class King : Figure
     {
         public King(string color, (int, int) position) : base(color, position)
         {
             Name = "King";
         }
 
-        public override List<(int, int)> GetAvailableMoves(Figure[,] board)
+        public override List<(int, int)> GetRawMoves(Figure[,] board)
         {
             var moves = new List<(int, int)>();
             int[] rowOffsets = { -1, -1, -1, 0, 0, 1, 1, 1 };
             int[] colOffsets = { -1, 0, 1, -1, 1, -1, 0, 1 };
 
-            // Обычные ходы
             for (int i = 0; i < 8; i++)
             {
                 int newRow = Position.row + rowOffsets[i];
@@ -28,6 +30,15 @@ namespace Model.Core
                 if (IsInsideBoard(newRow, newCol) && !IsAlly(board, newRow, newCol))
                     moves.Add((newRow, newCol));
             }
+
+            return moves;
+        }
+
+        public override List<(int, int)> GetAvailableMoves(Figure[,] board)
+        {
+            var moves = GetRawMoves(board)
+                .Where(move => IsMoveSafe(board, move))
+                .ToList();
 
             // Рокировка
             if (!HasMoved && !Game.Instance.IsKingInCheck(Color, board))
@@ -61,4 +72,5 @@ namespace Model.Core
             return true;
         }
     }
+}
 }

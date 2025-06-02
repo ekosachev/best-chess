@@ -12,6 +12,8 @@ namespace Model.Core
         string Name { get; }
         (int row, int col) Position { get; set; }
         bool HasMoved { get; set; }
+
         List<(int row, int col)> GetAvailableMoves(Figure[,] board);
+        List<(int row, int col)> GetRawMoves(Figure[,] board); // Добавляем в интерфейс
     }
 }

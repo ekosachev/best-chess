@@ -6,42 +6,42 @@ using System.Threading.Tasks;
 
 namespace Model.Core
 {
-    public class Bishop : Figure //слон
-    {
-        public Bishop(string color, (int, int) position) : base(color, position)
+        public class Bishop : Figure
         {
-            Name = "Bishop";
-        }
-
-        public override List<(int, int)> GetAvailableMoves(Figure[,] board)
-        {
-            var moves = new List<(int, int)>();
-
-            int[] directions = { -1, 1 };
-            foreach (int rowDir in directions)
+            public Bishop(string color, (int, int) position) : base(color, position)
             {
-                foreach (int colDir in directions)
+                Name = "Bishop";
+            }
+
+            public override List<(int, int)> GetRawMoves(Figure[,] board)
+            {
+                var moves = new List<(int, int)>();
+
+                int[] directions = { -1, 1 };
+                foreach (int rowDir in directions)
                 {
-                    for (int i = 1; i < 8; i++)
+                    foreach (int colDir in directions)
                     {
-                        int newRow = Position.row + i * rowDir;
-                        int newCol = Position.col + i * colDir;
-
-                        if (!IsInsideBoard(newRow, newCol)) break;
-
-                        if (board[newRow, newCol] == null)
-                            moves.Add((newRow, newCol));
-                        else
+                        for (int i = 1; i < 8; i++)
                         {
-                            if (IsEnemy(board, newRow, newCol))
+                            int newRow = Position.row + i * rowDir;
+                            int newCol = Position.col + i * colDir;
+
+                            if (!IsInsideBoard(newRow, newCol)) break;
+
+                            if (board[newRow, newCol] == null)
                                 moves.Add((newRow, newCol));
-                            break;
+                            else
+                            {
+                                if (IsEnemy(board, newRow, newCol))
+                                    moves.Add((newRow, newCol));
+                                break;
+                            }
                         }
                     }
                 }
-            }
 
-            return moves;
+                return moves;
+            }
         }
-    }
 }

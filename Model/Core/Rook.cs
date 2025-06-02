@@ -5,49 +5,49 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Model.Core
-{
-    public class Rook : Figure //ладья
-    {
-        public Rook(string color, (int, int) position) : base(color, position)
-        {
-            Name = "Rook";
-        }
-
-        public override List<(int, int)> GetAvailableMoves(Figure[,] board)
-        {
-            var moves = new List<(int, int)>();
-            int[] directions = { -1, 1 };
-
-            foreach (int dir in directions)
+{ 
+            public class Rook : Figure
             {
-                // По горизонтали
-                for (int col = Position.col + dir; IsInsideBoard(Position.row, col); col += dir)
+                public Rook(string color, (int, int) position) : base(color, position)
                 {
-                    if (board[Position.row, col] == null)
-                        moves.Add((Position.row, col));
-                    else
-                    {
-                        if (IsEnemy(board, Position.row, col))
-                            moves.Add((Position.row, col));
-                        break;
-                    }
+                    Name = "Rook";
                 }
 
-                // По вертикали
-                for (int row = Position.row + dir; IsInsideBoard(row, Position.col); row += dir)
+                public override List<(int, int)> GetRawMoves(Figure[,] board)
                 {
-                    if (board[row, Position.col] == null)
-                        moves.Add((row, Position.col));
-                    else
+                    var moves = new List<(int, int)>();
+
+                    int[] directions = { -1, 1 };
+                    foreach (int dir in directions)
                     {
-                        if (IsEnemy(board, row, Position.col))
-                            moves.Add((row, Position.col));
-                        break;
+                        // По горизонтали
+                        for (int col = Position.col + dir; IsInsideBoard(Position.row, col); col += dir)
+                        {
+                            if (board[Position.row, col] == null)
+                                moves.Add((Position.row, col));
+                            else
+                            {
+                                if (IsEnemy(board, Position.row, col))
+                                    moves.Add((Position.row, col));
+                                break;
+                            }
+                        }
+
+                        // По вертикали
+                        for (int row = Position.row + dir; IsInsideBoard(row, Position.col); row += dir)
+                        {
+                            if (board[row, Position.col] == null)
+                                moves.Add((row, Position.col));
+                            else
+                            {
+                                if (IsEnemy(board, row, Position.col))
+                                    moves.Add((row, Position.col));
+                                break;
+                            }
+                        }
                     }
+
+                    return moves;
                 }
             }
-
-            return moves;
-        }
-    }
 }
