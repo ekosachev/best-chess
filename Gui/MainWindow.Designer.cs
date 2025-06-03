@@ -105,8 +105,8 @@
             pathToSave = new Label();
             label3 = new Label();
             saveFormatSelector = new ComboBox();
-            saveFileSelector = new SaveFileDialog();
             saveButton = new Button();
+            saveFileSelector = new SaveFileDialog();
             boardArea.SuspendLayout();
             mainArea.SuspendLayout();
             sidebarArea.SuspendLayout();
@@ -857,7 +857,7 @@
             mainArea.Dock = DockStyle.Fill;
             mainArea.Location = new Point(0, 0);
             mainArea.Name = "mainArea";
-            mainArea.Size = new Size(627, 603);
+            mainArea.Size = new Size(575, 567);
             mainArea.TabIndex = 1;
             // 
             // sidebarArea
@@ -867,9 +867,9 @@
             sidebarArea.Controls.Add(tableLayoutPanel1);
             sidebarArea.Controls.Add(groupBox1);
             sidebarArea.Dock = DockStyle.Right;
-            sidebarArea.Location = new Point(627, 0);
+            sidebarArea.Location = new Point(575, 0);
             sidebarArea.Name = "sidebarArea";
-            sidebarArea.Size = new Size(206, 603);
+            sidebarArea.Size = new Size(206, 567);
             sidebarArea.TabIndex = 1;
             // 
             // tableLayoutPanel1
@@ -1017,7 +1017,8 @@
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             AutoSize = true;
-            ClientSize = new Size(833, 603);
+            AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            ClientSize = new Size(781, 567);
             Controls.Add(mainArea);
             Controls.Add(sidebarArea);
             Name = "MainWindow";

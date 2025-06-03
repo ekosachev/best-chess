@@ -41,6 +41,8 @@ namespace Gui
 
         private Model.Core.Game GameState { get; set; }
         private Position? SelectedCell { get; set; }
+        private List<Position> HighlightedCells { get; set; } = new List<Position>();
+        private bool ControlsEnabled { get; set; } = true;
 
         private Panel[][] BoardCells { get; set; }
         public MainWindow(Model.Core.Game game)
@@ -80,14 +82,10 @@ namespace Gui
                 for (int col = 0; col < 8; col++) BoardCells[row][col].Click += Cell_Click;
             }
 
-            currentTurnLabel.Paint += CurrentTurnLabel_Paint;
-
             updateBoard();
-
-
         }
 
-        private void CurrentTurnLabel_Paint(object? sender, PaintEventArgs e)
+        private void UpdateCurrentPlayer()
         {
             currentTurnLabel.Text = GameState.CurrentPlayer == "White" ? "Белые" : "Черные";
         }
@@ -106,7 +104,6 @@ namespace Gui
         private void placePiece(int row, int col, IFigure figure)
         {
             var image = getPieceImage(figure);
-            if (image == null) return;
             BoardCells[row][col].BackgroundImage = image;
         }
 
@@ -125,7 +122,12 @@ namespace Gui
 
         private void Cell_Click(object sender, EventArgs e)
         {
+            if (GameState.IsCheckmate || GameState.IsStalemate)
+            {
+                return;
+            }
             Panel panel;
+
             if (sender is Panel p)
             {
                 panel = (Panel)sender;
@@ -145,12 +147,36 @@ namespace Gui
                 if (SelectedCell.Value.row == row && SelectedCell.Value.col == col)
                 {
                     DeselectCell();
+                    UnhighlightAllCells();
                     return;
                 }
                 Console.WriteLine("Making a move");
                 (int, int) from = (SelectedCell.Value.row, SelectedCell.Value.col);
                 (int, int) to = (row, col);
-                GameState.MakeMove(from, to);
+                if (HighlightedCells.Contains(new Position { row = row, col = col }))
+                {
+                    GameState.MakeMove(from, to);
+                    
+                    updateBoard();
+                    DeselectCell();
+                    UnhighlightAllCells();
+                    if (GameState.IsCheck)
+                    {
+                        Form dlg = new Dialogue("Шах", $"{currentTurnLabel.Text} поставили шах");
+                        dlg.ShowDialog();
+                    }
+                    if (GameState.IsCheckmate)
+                    {
+                        Form dlg = new Dialogue("Шах и мат", $"{currentTurnLabel.Text} поставили шах и мат");
+                        dlg.ShowDialog();
+                    }
+                    if (GameState.IsStalemate)
+                    {
+                        Form dlg = new Dialogue("Ничья", $"Партия завершилась ничьей");
+                        dlg.ShowDialog();
+                    }
+                    UpdateCurrentPlayer();
+                }
             }
 
             Figure? figure = GameState.Board[row, col];
@@ -160,10 +186,11 @@ namespace Gui
             {
 
                 SelectCell(row, col);
-                //foreach (var pos in GameState.GetValidMoves(figure))
-                //{
-                //    HighlightCell(pos.Item1, pos.Item2);
-                //}
+                UnhighlightAllCells();
+                foreach (var pos in GameState.GetValidMoves(figure))
+                {
+                    HighlightCell(pos.Item1, pos.Item2);
+                }
             }
         }
 
@@ -185,6 +212,17 @@ namespace Gui
         private void HighlightCell(int row, int col)
         {
             BoardCells[row][col].BackColor = (row + col) % 2 == 0 ? WHITE_CELL_HIGHLIGHTED : BLACK_CELL_HIGHLIGHTED;
+            HighlightedCells.Add(new Position { row = row, col = col });
+        }
+
+        private void UnhighlightAllCells()
+        {
+            foreach (var pos in HighlightedCells)
+            {
+                BoardCells[pos.row][pos.col].BackColor = (pos.row + pos.col) % 2 == 0 ? WHITE_CELL : BLACK_CELL;
+            }
+
+            HighlightedCells.Clear();
         }
 
         private void ChooseSaveFile(object sender, EventArgs e)

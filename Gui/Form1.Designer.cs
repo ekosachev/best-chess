@@ -32,13 +32,18 @@ partial class MainMenu
         ResumeGame = new Button();
         SaveFormatSelector = new ComboBox();
         SelectGameSaveFile = new OpenFileDialog();
+        flowLayoutPanel1 = new FlowLayoutPanel();
+        label1 = new Label();
+        flowLayoutPanel1.SuspendLayout();
         SuspendLayout();
         // 
         // NewGame
         // 
-        NewGame.Location = new Point(252, 176);
+        NewGame.AutoSize = true;
+        NewGame.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        NewGame.Location = new Point(3, 3);
         NewGame.Name = "NewGame";
-        NewGame.Size = new Size(131, 23);
+        NewGame.Size = new Size(123, 25);
         NewGame.TabIndex = 0;
         NewGame.Text = "Начать новую игру";
         NewGame.UseVisualStyleBackColor = true;
@@ -46,9 +51,10 @@ partial class MainMenu
         // 
         // ResumeGame
         // 
-        ResumeGame.Location = new Point(320, 205);
+        ResumeGame.AutoSize = true;
+        ResumeGame.Location = new Point(3, 34);
         ResumeGame.Name = "ResumeGame";
-        ResumeGame.Size = new Size(131, 23);
+        ResumeGame.Size = new Size(123, 25);
         ResumeGame.TabIndex = 1;
         ResumeGame.Text = "Продолжить игру";
         ResumeGame.UseVisualStyleBackColor = true;
@@ -57,9 +63,9 @@ partial class MainMenu
         // SaveFormatSelector
         // 
         SaveFormatSelector.FormattingEnabled = true;
-        SaveFormatSelector.Location = new Point(389, 176);
+        SaveFormatSelector.Location = new Point(3, 80);
         SaveFormatSelector.Name = "SaveFormatSelector";
-        SaveFormatSelector.Size = new Size(121, 23);
+        SaveFormatSelector.Size = new Size(123, 23);
         SaveFormatSelector.TabIndex = 2;
         // 
         // SelectGameSaveFile
@@ -67,18 +73,44 @@ partial class MainMenu
         SelectGameSaveFile.FileName = "openFileDialog1";
         SelectGameSaveFile.FileOk += openFileDialog1_FileOk;
         // 
+        // flowLayoutPanel1
+        // 
+        flowLayoutPanel1.AutoSize = true;
+        flowLayoutPanel1.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        flowLayoutPanel1.Controls.Add(NewGame);
+        flowLayoutPanel1.Controls.Add(ResumeGame);
+        flowLayoutPanel1.Controls.Add(label1);
+        flowLayoutPanel1.Controls.Add(SaveFormatSelector);
+        flowLayoutPanel1.FlowDirection = FlowDirection.TopDown;
+        flowLayoutPanel1.Location = new Point(12, 12);
+        flowLayoutPanel1.Name = "flowLayoutPanel1";
+        flowLayoutPanel1.Size = new Size(129, 106);
+        flowLayoutPanel1.TabIndex = 3;
+        // 
+        // label1
+        // 
+        label1.AutoSize = true;
+        label1.Location = new Point(3, 62);
+        label1.Name = "label1";
+        label1.Size = new Size(121, 15);
+        label1.TabIndex = 3;
+        label1.Text = "Формат сохранения:";
+        // 
         // MainMenu
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(800, 450);
-        Controls.Add(SaveFormatSelector);
-        Controls.Add(ResumeGame);
-        Controls.Add(NewGame);
+        AutoSize = true;
+        AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        ClientSize = new Size(724, 454);
+        Controls.Add(flowLayoutPanel1);
         Name = "MainMenu";
         Text = "best-chess Main Menu";
         Load += Form1_Load;
+        flowLayoutPanel1.ResumeLayout(false);
+        flowLayoutPanel1.PerformLayout();
         ResumeLayout(false);
+        PerformLayout();
     }
 
     #endregion
@@ -87,4 +119,6 @@ partial class MainMenu
     private Button ResumeGame;
     private ComboBox SaveFormatSelector;
     private OpenFileDialog SelectGameSaveFile;
+    private FlowLayoutPanel flowLayoutPanel1;
+    private Label label1;
 }
