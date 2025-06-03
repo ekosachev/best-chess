@@ -28,10 +28,6 @@ namespace Model.Core
             InitializeBoard();
             SaveGameState();
         }
-
-        /// <summary>
-        /// Инициализация начальной расстановки фигур
-        /// </summary>
         private void InitializeBoard()
         {
             // Расстановка пешек
@@ -40,7 +36,6 @@ namespace Model.Core
                 Board[1, col] = new Pawn("Black", (1, col));
                 Board[6, col] = new Pawn("White", (6, col));
             }
-
             // Расстановка остальных фигур
             string[] backRowOrder = { "Rook", "Knight", "Bishop", "Queen", "King", "Bishop", "Knight", "Rook" };
 
@@ -64,20 +59,12 @@ namespace Model.Core
                 _ => throw new ArgumentException("Unknown figure type")
             };
         }
-
-        /// <summary>
-        /// Сохраняет текущее состояние игры для возможного отката
-        /// </summary>
         private void SaveGameState()
         {
             var boardCopy = (Figure[,])Board.Clone();
             _boardHistory.Push(boardCopy);
             _playerHistory.Push(CurrentPlayer);
         }
-
-        /// <summary>
-        /// Отменяет последний ход
-        /// </summary>
         public void UndoLastMove()
         {
             if (_boardHistory.Count > 1)
@@ -88,10 +75,6 @@ namespace Model.Core
                 UpdateGameStatus();
             }
         }
-
-        /// <summary>
-        /// Выполняет ход фигурой
-        /// </summary>
         public bool MakeMove((int row, int col) from, (int row, int col) to)
         {
             var figure = Board[from.row, from.col];
@@ -168,14 +151,31 @@ namespace Model.Core
         {
             if (figure is Pawn && (to.row == 0 || to.row == 7))
             {
-                // Здесь можно добавить логику выбора фигуры для превращения
+                // Создаем форму для выбора фигуры
+                /*var promotionForm = new PromotionForm(figure.Color);
+                promotionForm.ShowDialog();
+
+                // Получаем выбранную фигуру
+                Figure promotedFigure = promotionForm.SelectedFigure switch
+                {
+                    "Queen" => new Queen(figure.Color, to),
+                    "Rook" => new Rook(figure.Color, to),
+                    "Bishop" => new Bishop(figure.Color, to),
+                    "Knight" => new Knight(figure.Color, to),
+                    _ => new Queen(figure.Color, to) // По умолчанию - ферзь
+                };
+
+                // Заменяем пешку на выбранную фигуру
+                Board[to.row, to.col] = promotedFigure;*/
+
+                // Временная заглушка - всегда превращаем в ферзя
                 Board[to.row, to.col] = new Queen(figure.Color, to);
+
+                // Логируем превращение
+                //Debug.WriteLine($"Пешка превращена в {promotionForm.SelectedFigure} на {to}");
             }
         }
 
-        /// <summary>
-        /// Обновляет статус игры (шах, мат, пат)
-        /// </summary>
         public void UpdateGameStatus()
         {
             IsCheck = IsKingInCheck(CurrentPlayer);
@@ -205,9 +205,6 @@ namespace Model.Core
             return false;
         }
 
-        /// <summary>
-        /// Возвращает все допустимые ходы для фигуры
-        /// </summary>
         public List<(int row, int col)> GetValidMoves(Figure figure)
         {
             var rawMoves = figure.GetRawMoves(Board);
@@ -378,9 +375,6 @@ namespace Model.Core
             return row >= 0 && row < 8 && col >= 0 && col < 8;
         }
 
-        /// <summary>
-        /// Сбрасывает игру в начальное состояние
-        /// </summary>
         public void ResetGame()
         {
             Board = new Figure[8, 8];
