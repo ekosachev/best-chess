@@ -11,7 +11,7 @@ namespace Model.Core
         private void UpdateCheck()
         {
             IsCheck = IsKingInCheck(CurrentPlayer);
-            IsCheckmate = IsCheck && !PlayerHasValidMoves(CurrentPlayer);
+            IsCheckmate = (IsCheck && !PlayerHasValidMoves(CurrentPlayer)) || !Board.Any(r => r.Any(f => f is King _ && f.Color != CurrentPlayer));
             IsStalemate = !IsCheck && !PlayerHasValidMoves(CurrentPlayer);
         }
     }
