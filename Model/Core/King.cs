@@ -39,7 +39,7 @@ namespace Model.Core
                 }
             }
 
-            // Рокировка (нужно добавить проверки)
+            // Рокировка (только если не было ходов)
             if (!HasMoved)
             {
                 // Короткая рокировка
@@ -57,12 +57,6 @@ namespace Model.Core
             }
 
             return moves;
-        }
-
-        public override List<(int row, int col)> GetValidMoves(Figure[,] board)
-        {
-            var rawMoves = GetRawMoves(board);
-            return rawMoves.Where(move => !Game.Instance.WouldPositionBeUnderAttack(move, Color)).ToList();
         }
     }
 }
