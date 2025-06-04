@@ -169,23 +169,20 @@ namespace Gui
                     UnhighlightAllCells();
                     if (GameState.IsCheck)
                     {
-                        Form dlg = new Dialogue("Шах", $"{currentTurnLabel.Text} поставили шах");
-                        dlg.ShowDialog();
+                        MessageBox.Show($"{currentTurnLabel.Text} поставили шах", "Шах", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                     }
                     if (GameState.IsCheckmate)
                     {
-                        Form dlg = new Dialogue("Шах и мат", $"{currentTurnLabel.Text} поставили шах и мат");
-                        dlg.ShowDialog();
+                        MessageBox.Show($"{currentTurnLabel.Text} поставили шах и мат\nПобеда {(currentTurnLabel.Text == "Белые" ? "Белых" : "Черных" )}", "Шах и мат", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+
                     }
                     if (GameState.IsStalemate)
                     {
-                        Form dlg = new Dialogue("Пат", $"Партия завершилась патом");
-                        dlg.ShowDialog();
+                        MessageBox.Show($"Партия завершилась патом", "Пат", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                     }
                     if (GameState.IsDrawByRepetition)
                     {
-                        Form dlg = new Dialogue("Ничья", $"Партия завершилась ничьей");
-                        dlg.ShowDialog();
+                        MessageBox.Show($"Партия завершилась ничьей после троекратного повторения ходов", "Ничья", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                     }
                     UpdateCurrentPlayer();
                 }
