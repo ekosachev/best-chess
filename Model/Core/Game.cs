@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Model.Data;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -7,23 +8,26 @@ using System.Threading.Tasks;
 
 namespace Model.Core
 {
-    public class Game
+    public partial class Game
     {
         private static Game _instance;
-        private Stack<Figure[,]> _boardHistory = new Stack<Figure[,]>();
+        private Stack<Figure[][]> _boardHistory = new Stack<Figure[][]>();
         private Stack<string> _playerHistory = new Stack<string>();
         private Dictionary<string, int> _positionCounts = new Dictionary<string, int>();
 
         public static Game Instance => _instance ??= new Game();
-        public Figure[,] Board { get; private set; } = new Figure[8, 8];
-        public string CurrentPlayer { get; private set; } = "White";
-        public Pawn LastPawn { get; private set; }
-        public bool LastMoveWasDoublePawnPush { get; private set; }
-        public bool IsCheck { get; private set; }
-        public bool IsCheckmate { get; private set; }
-        public bool IsStalemate { get; private set; }
-        public bool IsDrawByRepetition { get; private set; }
-        public (int row, int col)? EnPassantTarget { get; private set; }
+        public Figure[][] Board { get; internal set; } = new Figure[8][];
+        public string CurrentPlayer { get; internal set; } = "White";
+        public Pawn LastPawn { get; internal set; }
+        public bool LastMoveWasDoublePawnPush { get; internal set; }
+        public bool IsCheck { get;  internal set; }
+        public bool IsCheckmate { get; internal set; }
+        public bool IsStalemate { get; internal set; }
+        public bool IsDrawByRepetition { get; internal set; }
+        public (int row, int col)? EnPassantTarget { get; internal set; }
+
+        public string FilePath { get; set; } = "";
+        public string Extension { get; set; } = "";
 
         public Game()
         {
@@ -33,11 +37,15 @@ namespace Model.Core
 
         private void InitializeBoard()
         {
+            for(int i = 0; i < 8; i++)
+            {
+                Board[i] = new Figure[8];
+            }
             // Расстановка пешек
             for (int col = 0; col < 8; col++)
             {
-                Board[1, col] = new Pawn("Black", (1, col));
-                Board[6, col] = new Pawn("White", (6, col));
+                Board[1][col] = new Pawn("Black", (1, col));
+                Board[6][col] = new Pawn("White", (6, col));
             }
 
             // Расстановка остальных фигур
@@ -45,8 +53,8 @@ namespace Model.Core
 
             for (int col = 0; col < 8; col++)
             {
-                Board[0, col] = CreateFigure(backRowOrder[col], "Black", (0, col));
-                Board[7, col] = CreateFigure(backRowOrder[col], "White", (7, col));
+                Board[0][col] = CreateFigure(backRowOrder[col], "Black", (0, col));
+                Board[7][col] = CreateFigure(backRowOrder[col], "White", (7, col));
             }
         }
 
@@ -66,14 +74,14 @@ namespace Model.Core
 
         private void SaveGameState()
         {
-            var boardCopy = (Figure[,])Board.Clone();
+            var boardCopy = (Figure[][])Board.Clone();
             _boardHistory.Push(boardCopy);
             _playerHistory.Push(CurrentPlayer);
 
             var positionKey = GeneratePositionKey();
             _positionCounts.TryGetValue(positionKey, out int count);
             _positionCounts[positionKey] = count + 1;
-            IsDrawByRepetition = _positionCounts[positionKey] >= 3;
+            UpdateDrawByRepetition(positionKey);
         }
 
         private string GeneratePositionKey()
@@ -83,7 +91,7 @@ namespace Model.Core
             {
                 for (int j = 0; j < 8; j++)
                 {
-                    sb.Append(Board[i, j]?.ToString() ?? ".");
+                    sb.Append(Board[i][j]?.ToString() ?? ".");
                 }
             }
             sb.Append(CurrentPlayer);
@@ -110,7 +118,7 @@ namespace Model.Core
 
         public bool MakeMove((int row, int col) from, (int row, int col) to)
         {
-            var figure = Board[from.row, from.col];
+            var figure = Board[from.row][from.col];
             if (figure == null || figure.Color != CurrentPlayer)
                 return false;
 
@@ -120,8 +128,8 @@ namespace Model.Core
             SaveGameState();
             HandleSpecialMoves(figure, from, to);
 
-            Board[to.row, to.col] = figure;
-            Board[from.row, from.col] = null;
+            Board[to.row][to.col] = figure;
+            Board[from.row][from.col] = null;
             figure.Position = to;
             figure.HasMoved = true;
 
@@ -134,9 +142,9 @@ namespace Model.Core
 
         private void HandleSpecialMoves(Figure figure, (int row, int col) from, (int row, int col) to)
         {
-            if (figure is Pawn && from.col != to.col && Board[to.row, to.col] == null)
+            if (figure is Pawn && from.col != to.col && Board[to.row][to.col] == null)
             {
-                Board[from.row, to.col] = null;
+                Board[from.row][to.col] = null;
             }
 
             if (figure is King && Math.Abs(from.col - to.col) == 2)
@@ -162,9 +170,9 @@ namespace Model.Core
             int rookCol = to.col > from.col ? 7 : 0;
             int newRookCol = to.col > from.col ? 5 : 3;
 
-            var rook = Board[from.row, rookCol];
-            Board[from.row, newRookCol] = rook;
-            Board[from.row, rookCol] = null;
+            var rook = Board[from.row][rookCol];
+            Board[from.row][newRookCol] = rook;
+            Board[from.row][rookCol] = null;
             rook.Position = (from.row, newRookCol);
             rook.HasMoved = true;
         }
@@ -173,7 +181,7 @@ namespace Model.Core
         {
             if (figure is Pawn && (to.row == 0 || to.row == 7))
             {
-                Board[to.row, to.col] = new Queen(figure.Color, to);
+                Board[to.row][to.col] = new Queen(figure.Color, to);
             }
         }
 
@@ -189,7 +197,7 @@ namespace Model.Core
             if (!IsInsideBoard(move.row, move.col))
                 return false;
 
-            if (Board[move.row, move.col]?.Color == figure.Color)
+            if (Board[move.row][move.col]?.Color == figure.Color)
                 return false;
 
             if (figure is King king)
@@ -205,20 +213,20 @@ namespace Model.Core
                 return false;
 
             // Дополнительная проверка для взятия фигур
-            if (Board[move.row, move.col] != null)
+            if (Board[move.row][move.col] != null)
             {
                 // Временно выполняем взятие
-                var target = Board[move.row, move.col];
-                Board[move.row, move.col] = king;
-                Board[king.Position.row, king.Position.col] = null;
+                var target = Board[move.row][move.col];
+                Board[move.row][move.col] = king;
+                Board[king.Position.row][king.Position.col] = null;
                 var originalPos = king.Position;
                 king.Position = move;
 
                 bool isCheck = IsKingInCheck(king.Color);
 
                 // Отменяем временное взятие
-                Board[move.row, move.col] = target;
-                Board[originalPos.row, originalPos.col] = king;
+                Board[move.row][move.col] = target;
+                Board[originalPos.row][originalPos.col] = king;
                 king.Position = originalPos;
 
                 if (isCheck)
@@ -239,7 +247,7 @@ namespace Model.Core
             int direction = move.col > king.Position.col ? 1 : -1;
             int rookCol = direction > 0 ? 7 : 0;
 
-            var rook = Board[king.Position.row, rookCol] as Rook;
+            var rook = Board[king.Position.row][rookCol] as Rook;
             if (rook == null || rook.Color != king.Color || rook.HasMoved)
                 return false;
 
@@ -247,7 +255,7 @@ namespace Model.Core
             int end = Math.Max(king.Position.col, rookCol);
             for (int col = start; col < end; col++)
             {
-                if (Board[king.Position.row, col] != null)
+                if (Board[king.Position.row][col] != null)
                     return false;
             }
 
@@ -271,7 +279,7 @@ namespace Model.Core
             {
                 for (int j = 0; j < 8; j++)
                 {
-                    var figure = Board[i, j];
+                    var figure = Board[i][j];
                     if (figure != null && figure.Color == byColor)
                     {
                         if (figure is Pawn pawn)
@@ -293,9 +301,7 @@ namespace Model.Core
 
         private void UpdateGameStatus()
         {
-            IsCheck = IsKingInCheck(CurrentPlayer);
-            IsCheckmate = IsCheck && !PlayerHasValidMoves(CurrentPlayer);
-            IsStalemate = !IsCheck && !PlayerHasValidMoves(CurrentPlayer);
+            UpdateCheck();
         }
 
         private bool IsKingInCheck(string playerColor)
@@ -310,7 +316,7 @@ namespace Model.Core
             {
                 for (int j = 0; j < 8; j++)
                 {
-                    var figure = Board[i, j];
+                    var figure = Board[i][j];
                     if (figure != null && figure.Color == playerColor)
                     {
                         foreach (var move in GetRawMoves(figure))
@@ -328,7 +334,7 @@ namespace Model.Core
         {
             for (int i = 0; i < 8; i++)
                 for (int j = 0; j < 8; j++)
-                    if (Board[i, j] is King king && king.Color == color)
+                    if (Board[i][j] is King king && king.Color == color)
                         return (i, j);
             return (-1, -1);
         }
@@ -346,16 +352,16 @@ namespace Model.Core
         private bool WouldMoveExposeKing(Figure figure, (int row, int col) move)
         {
             var originalPos = figure.Position;
-            var target = Board[move.row, move.col];
+            var target = Board[move.row][move.col];
 
-            Board[move.row, move.col] = figure;
-            Board[originalPos.row, originalPos.col] = null;
+            Board[move.row][move.col] = figure;
+            Board[originalPos.row][originalPos.col] = null;
             figure.Position = move;
 
             bool isCheck = IsKingInCheck(figure.Color);
 
-            Board[originalPos.row, originalPos.col] = figure;
-            Board[move.row, move.col] = target;
+            Board[originalPos.row][originalPos.col] = figure;
+            Board[move.row][move.col] = target;
             figure.Position = originalPos;
 
             return isCheck;
@@ -363,7 +369,7 @@ namespace Model.Core
 
         public void ResetGame()
         {
-            Board = new Figure[8, 8];
+            Board = new Figure[8][];
             CurrentPlayer = "White";
             InitializeBoard();
             _boardHistory.Clear();

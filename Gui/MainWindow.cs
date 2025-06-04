@@ -1,17 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using Model;
-using Model.Core;
-using Newtonsoft.Json.Bson;
+﻿using Model.Core;
+using Model.Data;
 
 
 namespace Gui
@@ -58,31 +46,50 @@ namespace Gui
                 new Format { Name = "XML", Value = "xml" },
             };
 
-            saveFormatSelector.DataSource = formats;
-            saveFormatSelector.DisplayMember = "Name";
-            saveFormatSelector.ValueMember = "Value";
-            saveFormatSelector.SelectedIndex = 0;
-
 
             GameState = game;
-            BoardCells = new Panel[][]
-            {
-                new Panel[] { A8, B8, C8, D8, E8, F8, G8, H8 },
-                new Panel[] { A7, B7, C7, D7, E7, F7, G7, H7 },
-                new Panel[] { A6, B6, C6, D6, E6, F6, G6, H6 },
-                new Panel[] { A5, B5, C5, D5, E5, F5, G5, H5 },
-                new Panel[] { A4, B4, C4, D4, E4, F4, G4, H4 },
-                new Panel[] { A3, B3, C3, D3, E3, F3, G3, H3 },
-                new Panel[] { A2, B2, C2, D2, E2, F2, G2, H2 },
-                new Panel[] { A1, B1, C1, D1, E1, F1, G1, H1 },
-            };
+            BoardCells =
+            [
+                [A8, B8, C8, D8, E8, F8, G8, H8],
+                [A7, B7, C7, D7, E7, F7, G7, H7],
+                [A6, B6, C6, D6, E6, F6, G6, H6],
+                [A5, B5, C5, D5, E5, F5, G5, H5],
+                [A4, B4, C4, D4, E4, F4, G4, H4],
+                [A3, B3, C3, D3, E3, F3, G3, H3],
+                [A2, B2, C2, D2, E2, F2, G2, H2],
+                [A1, B1, C1, D1, E1, F1, G1, H1],
+            ];
 
             for (int row = 0; row < 8; row++)
             {
                 for (int col = 0; col < 8; col++) BoardCells[row][col].Click += Cell_Click;
             }
 
+            FormClosing += MainWindow_FormClosing;
+
+            pathToSave.Text = string.IsNullOrEmpty(GameState.FilePath) ? "N/A" : GameState.FilePath;
+            setNewSavePath.Click += ChooseSaveFile;
+            saveButton.Click += SaveButton_Click;
+            currentTurnLabel.Text = GameState.CurrentPlayer == "White" ? "Белые" : "Черные";
+
             updateBoard();
+        }
+
+        private void SaveButton_Click(object? sender, EventArgs e)
+        {
+            SaveGame();
+        }
+
+        private void MainWindow_FormClosing(object? sender, FormClosingEventArgs e)
+        {
+            if (string.IsNullOrEmpty(GameState.FilePath))
+            {
+                ChooseSaveFile(sender, e);
+            }
+            else
+            {
+                SaveGame();
+            }
         }
 
         private void UpdateCurrentPlayer()
@@ -96,7 +103,7 @@ namespace Gui
             {
                 for (int col = 0; col < 8; col++)
                 {
-                    placePiece(row, col, GameState.Board[row, col]);
+                    placePiece(row, col, GameState.Board[row][col]);
                 }
             }
         }
@@ -156,7 +163,7 @@ namespace Gui
                 if (HighlightedCells.Contains(new Position { row = row, col = col }))
                 {
                     GameState.MakeMove(from, to);
-                    
+
                     updateBoard();
                     DeselectCell();
                     UnhighlightAllCells();
@@ -172,6 +179,11 @@ namespace Gui
                     }
                     if (GameState.IsStalemate)
                     {
+                        Form dlg = new Dialogue("Пат", $"Партия завершилась патом");
+                        dlg.ShowDialog();
+                    }
+                    if (GameState.IsDrawByRepetition)
+                    {
                         Form dlg = new Dialogue("Ничья", $"Партия завершилась ничьей");
                         dlg.ShowDialog();
                     }
@@ -179,7 +191,7 @@ namespace Gui
                 }
             }
 
-            Figure? figure = GameState.Board[row, col];
+            Figure? figure = GameState.Board[row][col];
             if (figure == null) return;
 
             if (figure.Color == GameState.CurrentPlayer)
@@ -227,12 +239,42 @@ namespace Gui
 
         private void ChooseSaveFile(object sender, EventArgs e)
         {
-            saveFileSelector.DefaultExt = $".{saveFormatSelector.SelectedValue}";
+            saveFileSelector.DefaultExt = GameState.Extension;
             var dt = DateTime.Now;
-            saveFileSelector.FileName = $"game-{dt.Year}-{dt.Month}-{dt.Day}T{dt.Hour}:{dt.Minute}:{dt.Second}";
+            saveFileSelector.FileName = $"game-{dt.Year}-{dt.Month}-{dt.Day}T{dt.Hour}{dt.Minute}{dt.Second}";
             var result = saveFileSelector.ShowDialog();
+            if (result != DialogResult.OK) return;
+            GameState.FilePath = saveFileSelector.FileName;
+            pathToSave.Text = GameState.FilePath;
+
+
+            SaveGame();
         }
 
+        private void SaveGame()
+        {
+            string filePath = GameState.FilePath;
+            if (string.IsNullOrEmpty(filePath)) return;
+            if (string.IsNullOrEmpty(GameState.Extension)) return;
+            string ext = Path.GetExtension(filePath);
+            GameSerializer serializer;
+            if (GameState.Extension == ".json")
+            {
+                serializer = new JsonGameSerializer();
+                serializer.Serialize(GameState, filePath);
+                
+            }
+            else
+            {
+                serializer = new XmlGameSerializer();
+                serializer.Serialize(GameState, filePath);
 
+            }
+        }
+
+        private void currentTurnLabel_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

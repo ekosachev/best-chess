@@ -16,7 +16,7 @@ namespace Model.Core
             Name = "King";
         }
 
-        public override List<(int row, int col)> GetRawMoves(Figure[,] board)
+        public override List<(int row, int col)> GetRawMoves(Figure[][] board)
         {
             var moves = new List<(int, int)>();
             var (row, col) = Position;
@@ -32,7 +32,7 @@ namespace Model.Core
                     int newCol = col + j;
 
                     if (IsInsideBoard(newRow, newCol) &&
-                        (board[newRow, newCol] == null || board[newRow, newCol].Color != Color))
+                        (board[newRow][newCol] == null || board[newRow][newCol].Color != Color))
                     {
                         moves.Add((newRow, newCol));
                     }
@@ -43,15 +43,15 @@ namespace Model.Core
             if (!HasMoved)
             {
                 // Короткая рокировка
-                if (board[row, 7] is Rook rook1 && !rook1.HasMoved)
+                if (board[row][7] is Rook rook1 && !rook1.HasMoved)
                 {
-                    if (board[row, 5] == null && board[row, 6] == null)
+                    if (board[row][5] == null && board[row][6] == null)
                         moves.Add((row, 6));
                 }
                 // Длинная рокировка
-                if (board[row, 0] is Rook rook2 && !rook2.HasMoved)
+                if (board[row][0] is Rook rook2 && !rook2.HasMoved)
                 {
-                    if (board[row, 1] == null && board[row, 2] == null && board[row, 3] == null)
+                    if (board[row][1] == null && board[row][2] == null && board[row][3] == null)
                         moves.Add((row, 2));
                 }
             }

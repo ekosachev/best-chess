@@ -13,7 +13,7 @@ namespace Model.Core
         (int row, int col) Position { get; set; }
         bool HasMoved { get; set; }
 
-        List<(int row, int col)> GetRawMoves(Figure[,] board);
-        List<(int row, int col)> GetValidMoves(Figure[,] board);
+        List<(int row, int col)> GetRawMoves(Figure[][] board);
+        List<(int row, int col)> GetValidMoves(Figure[][] board);
     }
 }

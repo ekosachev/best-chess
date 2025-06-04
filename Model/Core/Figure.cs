@@ -19,9 +19,9 @@ namespace Model.Core
             Position = position;
         }
 
-        public abstract List<(int row, int col)> GetRawMoves(Figure[,] board);
+        public abstract List<(int row, int col)> GetRawMoves(Figure[][] board);
 
-        public virtual List<(int row, int col)> GetValidMoves(Figure[,] board)
+        public virtual List<(int row, int col)> GetValidMoves(Figure[][] board)
         {
             return Game.Instance.GetValidMoves(this);
         }

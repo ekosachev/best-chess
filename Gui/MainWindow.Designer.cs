@@ -103,8 +103,6 @@
             label2 = new Label();
             setNewSavePath = new Button();
             pathToSave = new Label();
-            label3 = new Label();
-            saveFormatSelector = new ComboBox();
             saveButton = new Button();
             saveFileSelector = new SaveFileDialog();
             boardArea.SuspendLayout();
@@ -857,7 +855,7 @@
             mainArea.Dock = DockStyle.Fill;
             mainArea.Location = new Point(0, 0);
             mainArea.Name = "mainArea";
-            mainArea.Size = new Size(575, 567);
+            mainArea.Size = new Size(601, 567);
             mainArea.TabIndex = 1;
             // 
             // sidebarArea
@@ -867,9 +865,9 @@
             sidebarArea.Controls.Add(tableLayoutPanel1);
             sidebarArea.Controls.Add(groupBox1);
             sidebarArea.Dock = DockStyle.Right;
-            sidebarArea.Location = new Point(575, 0);
+            sidebarArea.Location = new Point(601, 0);
             sidebarArea.Name = "sidebarArea";
-            sidebarArea.Size = new Size(206, 567);
+            sidebarArea.Size = new Size(180, 567);
             sidebarArea.TabIndex = 1;
             // 
             // tableLayoutPanel1
@@ -915,7 +913,7 @@
             groupBox1.Dock = DockStyle.Bottom;
             groupBox1.Location = new Point(3, 39);
             groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(200, 142);
+            groupBox1.Size = new Size(138, 113);
             groupBox1.TabIndex = 1;
             groupBox1.TabStop = false;
             groupBox1.Text = "Сохранение";
@@ -930,8 +928,6 @@
             tableLayoutPanel2.Controls.Add(label2, 0, 0);
             tableLayoutPanel2.Controls.Add(setNewSavePath, 0, 1);
             tableLayoutPanel2.Controls.Add(pathToSave, 1, 1);
-            tableLayoutPanel2.Controls.Add(label3, 0, 2);
-            tableLayoutPanel2.Controls.Add(saveFormatSelector, 1, 2);
             tableLayoutPanel2.Controls.Add(saveButton, 0, 3);
             tableLayoutPanel2.Dock = DockStyle.Fill;
             tableLayoutPanel2.GrowStyle = TableLayoutPanelGrowStyle.FixedSize;
@@ -942,7 +938,7 @@
             tableLayoutPanel2.RowStyles.Add(new RowStyle());
             tableLayoutPanel2.RowStyles.Add(new RowStyle());
             tableLayoutPanel2.RowStyles.Add(new RowStyle());
-            tableLayoutPanel2.Size = new Size(194, 120);
+            tableLayoutPanel2.Size = new Size(132, 91);
             tableLayoutPanel2.TabIndex = 0;
             // 
             // label2
@@ -952,7 +948,7 @@
             label2.Dock = DockStyle.Fill;
             label2.Location = new Point(3, 0);
             label2.Name = "label2";
-            label2.Size = new Size(188, 15);
+            label2.Size = new Size(126, 15);
             label2.TabIndex = 0;
             label2.Text = "Путь к сохранению";
             label2.TextAlign = ContentAlignment.MiddleCenter;
@@ -973,30 +969,10 @@
             pathToSave.Dock = DockStyle.Fill;
             pathToSave.Location = new Point(100, 15);
             pathToSave.Name = "pathToSave";
-            pathToSave.Size = new Size(91, 45);
+            pathToSave.Size = new Size(29, 45);
             pathToSave.TabIndex = 2;
             pathToSave.Text = "N/A";
             pathToSave.TextAlign = ContentAlignment.MiddleCenter;
-            // 
-            // label3
-            // 
-            label3.AutoSize = true;
-            label3.Dock = DockStyle.Fill;
-            label3.Location = new Point(3, 60);
-            label3.Name = "label3";
-            label3.Size = new Size(91, 29);
-            label3.TabIndex = 3;
-            label3.Text = "Формат";
-            label3.TextAlign = ContentAlignment.MiddleCenter;
-            // 
-            // saveFormatSelector
-            // 
-            saveFormatSelector.Dock = DockStyle.Fill;
-            saveFormatSelector.FormattingEnabled = true;
-            saveFormatSelector.Location = new Point(100, 63);
-            saveFormatSelector.Name = "saveFormatSelector";
-            saveFormatSelector.Size = new Size(91, 23);
-            saveFormatSelector.TabIndex = 4;
             // 
             // saveButton
             // 
@@ -1004,13 +980,12 @@
             saveButton.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             tableLayoutPanel2.SetColumnSpan(saveButton, 2);
             saveButton.Dock = DockStyle.Fill;
-            saveButton.Location = new Point(3, 92);
+            saveButton.Location = new Point(3, 63);
             saveButton.Name = "saveButton";
-            saveButton.Size = new Size(188, 25);
+            saveButton.Size = new Size(126, 25);
             saveButton.TabIndex = 5;
             saveButton.Text = "Сохранить";
             saveButton.UseVisualStyleBackColor = true;
-            saveButton.Click += ChooseSaveFile;
             // 
             // MainWindow
             // 
@@ -1114,8 +1089,6 @@
         private Label label2;
         private Button setNewSavePath;
         private Label pathToSave;
-        private Label label3;
-        private ComboBox saveFormatSelector;
         private Button saveButton;
         private SaveFileDialog saveFileSelector;
     }

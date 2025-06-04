@@ -13,7 +13,7 @@ namespace Model.Core
             Name = "Queen";
         }
 
-        public override List<(int row, int col)> GetRawMoves(Figure[,] board)
+        public override List<(int row, int col)> GetRawMoves(Figure[][] board)
         {
             var moves = new List<(int, int)>();
             var (row, col) = Position;
@@ -35,13 +35,13 @@ namespace Model.Core
 
                         if (!IsInsideBoard(newRow, newCol)) break;
 
-                        if (board[newRow, newCol] == null)
+                        if (board[newRow][newCol] == null)
                         {
                             moves.Add((newRow, newCol));
                         }
                         else
                         {
-                            if (board[newRow, newCol].Color != Color)
+                            if (board[newRow][newCol].Color != Color)
                                 moves.Add((newRow, newCol));
                             break;
                         }
