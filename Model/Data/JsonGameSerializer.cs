@@ -109,7 +109,9 @@ namespace Model.Data
                     IsCheckmate = game.IsCheckmate,
                     IsStalemate = game.IsStalemate,
                     IsDrawByRepetition = game.IsDrawByRepetition,
-                    LastPawnPosition = game.LastPawn?.Position
+                    LastPawnPosition = game.LastPawn?.Position,
+                    FileName = game.FilePath,
+                    Extension = game.Extension,
                 };
             }
 
@@ -122,7 +124,9 @@ namespace Model.Data
                     IsCheck = IsCheck,
                     IsCheckmate = IsCheckmate,
                     IsStalemate = IsStalemate,
-                    IsDrawByRepetition = IsDrawByRepetition
+                    IsDrawByRepetition = IsDrawByRepetition,
+                    FilePath = FileName,
+                    Extension = Extension, 
                 };
 
                 game.Board = DeserializeBoard(Board, game);
