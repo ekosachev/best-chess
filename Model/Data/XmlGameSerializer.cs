@@ -120,7 +120,9 @@ namespace Model.Data
                     IsDrawByRepetition = game.IsDrawByRepetition,
                     LastPawnPosition = game.LastPawn != null ?
                         new PositionDTO { Row = game.LastPawn.Position.row, Col = game.LastPawn.Position.col } :
-                        null
+                        null,
+                    FileName = game.FilePath,
+                    Extension = game.Extension,
                 };
             }
 
@@ -133,7 +135,9 @@ namespace Model.Data
                     IsCheck = IsCheck,
                     IsCheckmate = IsCheckmate,
                     IsStalemate = IsStalemate,
-                    IsDrawByRepetition = IsDrawByRepetition
+                    IsDrawByRepetition = IsDrawByRepetition,
+                    FilePath = FileName,
+                    Extension = Extension
                 };
 
                 game.Board = DeserializeBoard(Board, game);
