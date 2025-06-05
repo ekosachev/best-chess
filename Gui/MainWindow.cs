@@ -68,11 +68,16 @@ namespace Gui
             FormClosing += MainWindow_FormClosing;
 
             pathToSave.Text = string.IsNullOrEmpty(GameState.FilePath) ? "N/A" : GameState.FilePath;
-            setNewSavePath.Click += ChooseSaveFile;
+            setNewSavePath.Click += SetNewSavePath_Click;
             saveButton.Click += SaveButton_Click;
             currentTurnLabel.Text = GameState.CurrentPlayer == "White" ? "Белые" : "Черные";
 
             updateBoard();
+        }
+
+        private void SetNewSavePath_Click(object? sender, EventArgs e)
+        {
+            ChooseSaveFile();
         }
 
         private void SaveButton_Click(object? sender, EventArgs e)
@@ -84,11 +89,12 @@ namespace Gui
         {
             if (string.IsNullOrEmpty(GameState.FilePath))
             {
-                ChooseSaveFile(sender, e);
+                if (!ChooseSaveFile()) e.Cancel = true;
             }
             else
             {
                 SaveGame();
+                
             }
         }
 
@@ -234,18 +240,20 @@ namespace Gui
             HighlightedCells.Clear();
         }
 
-        private void ChooseSaveFile(object sender, EventArgs e)
+        private bool ChooseSaveFile()
         {
             saveFileSelector.DefaultExt = GameState.Extension;
             var dt = DateTime.Now;
             saveFileSelector.FileName = $"game-{dt.Year}-{dt.Month}-{dt.Day}T{dt.Hour}{dt.Minute}{dt.Second}";
             var result = saveFileSelector.ShowDialog();
-            if (result != DialogResult.OK) return;
+            if (result != DialogResult.OK) return false;
             GameState.FilePath = saveFileSelector.FileName;
             pathToSave.Text = GameState.FilePath;
 
 
             SaveGame();
+            MessageBox.Show("Игра сохранена в новый файл", "Сохранение и загрузка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return true;
         }
 
         private void SaveGame()
@@ -267,6 +275,7 @@ namespace Gui
                 serializer.Serialize(GameState, filePath);
 
             }
+            MessageBox.Show("Игра сохранена", "Сохранение и загрузка", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void currentTurnLabel_Click(object sender, EventArgs e)
