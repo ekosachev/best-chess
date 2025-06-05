@@ -31,4 +31,10 @@ namespace Model.Data
                 Directory.CreateDirectory(directory);
         }
     }
+    public class GameSerializationException : Exception
+    {
+        public GameSerializationException(string message) : base(message) { }
+        public GameSerializationException(string message, Exception innerException)
+            : base(message, innerException) { }
+    }
 }
