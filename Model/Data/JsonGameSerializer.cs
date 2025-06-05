@@ -92,6 +92,8 @@ namespace Model.Data
             public bool IsStalemate { get; set; }
             public bool IsDrawByRepetition { get; set; }
             public (int row, int col)? LastPawnPosition { get; set; }
+            public string FileName { get; set; }
+            public string Extension { get; set; }
 
             public static GameDTO FromGame(Game game)
             {
@@ -173,6 +175,8 @@ namespace Model.Data
             public string Color { get; set; }
             public (int row, int col) Position { get; set; }
             public bool HasMoved { get; set; }
+            public string FileName { get; set; }
+            public string Extension { get; set; }
 
             public static FigureDTO FromFigure(Figure figure)
             {
