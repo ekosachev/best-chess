@@ -98,6 +98,9 @@ namespace Model.Data
 
             [XmlElement("LastPawnPosition")]
             public PositionDTO LastPawnPosition { get; set; }
+            public string FileName { get; set; }
+            public string Extension { get; set; }
+
 
             public static GameDTO FromGame(Game game)
             {
@@ -206,6 +209,9 @@ namespace Model.Data
 
             [XmlAttribute("HasMoved")]
             public bool HasMoved { get; set; }
+            public string FileName { get; set; }
+            public string Extension { get; set; }
+
 
             public static FigureDTO FromFigure(Figure figure)
             {
