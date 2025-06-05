@@ -6,12 +6,6 @@ namespace Gui
 {
     public partial class MainWindow : Form
     {
-        struct Format
-        {
-            public string Name { get; set; }
-            public string Value { get; set; }
-        }
-
         private static Color WHITE_CELL = Color.AntiqueWhite;
         private static Color BLACK_CELL = Color.SandyBrown;
         private static Color WHITE_CELL_SELECTED = Color.LawnGreen;
@@ -33,18 +27,11 @@ namespace Gui
         private bool ControlsEnabled { get; set; } = true;
 
         private Panel[][] BoardCells { get; set; }
-        public MainWindow(Model.Core.Game game)
+        public MainWindow(Game game, string? saveFormat = null)
         {
             InitializeComponent();
 
             saveFileSelector.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-
-
-            List<Format> formats = new List<Format>
-            {
-                new Format { Name = "JSON", Value = "json" },
-                new Format { Name = "XML", Value = "xml" },
-            };
 
 
             GameState = game;
@@ -66,13 +53,31 @@ namespace Gui
             }
 
             FormClosing += MainWindow_FormClosing;
-
-            pathToSave.Text = string.IsNullOrEmpty(GameState.FilePath) ? "N/A" : GameState.FilePath;
+            UpdatePathLabel();
             setNewSavePath.Click += SetNewSavePath_Click;
             saveButton.Click += SaveButton_Click;
             currentTurnLabel.Text = GameState.CurrentPlayer == "White" ? "Белые" : "Черные";
 
             updateBoard();
+
+            if (saveFormat != GameState.Extension.Substring(1) && saveFormat != null)
+            {
+                GameState.Extension = $".{saveFormat}";
+                GameState.FilePath = Path.ChangeExtension(GameState.FilePath, GameState.Extension);
+                UpdatePathLabel();
+                MessageBox.Show($"Формат изменен на {saveFormat}", "Сохранение и загрузка", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                SaveGame();
+            }
+
+            if (string.IsNullOrEmpty(GameState.FilePath) || string.IsNullOrEmpty(GameState.Extension))
+            {
+                saveButton.Enabled = false;
+            }
+        }
+
+        private void UpdatePathLabel()
+        {
+            pathToSave.Text = string.IsNullOrEmpty(GameState.FilePath) ? "N/A" : GameState.FilePath;
         }
 
         private void SetNewSavePath_Click(object? sender, EventArgs e)
@@ -250,7 +255,7 @@ namespace Gui
             GameState.FilePath = saveFileSelector.FileName;
             pathToSave.Text = GameState.FilePath;
 
-
+            saveButton.Enabled = true;
             SaveGame();
             MessageBox.Show("Игра сохранена в новый файл", "Сохранение и загрузка", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return true;

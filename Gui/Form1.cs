@@ -81,7 +81,7 @@ public partial class MainMenu : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "Ошибка чтения файла", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(ex.Message, "Сохранение и загрузка", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         if (game != null)
         {
@@ -98,7 +98,8 @@ public partial class MainMenu : Form
     private void OpenMainWindow(Game gameInstance)
     {
         Hide();
-        var form2 = new MainWindow(gameInstance);
+        string? format = SaveFormatSelector.SelectedValue == null ? null : (string)SaveFormatSelector.SelectedValue;
+        var form2 = new MainWindow(gameInstance, format);
         form2.Closed += (s, args) => Close();
         form2.Show();
     }
